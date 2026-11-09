@@ -1,8 +1,16 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 using SuperMarket.Models;
+using SuperMarket.Services;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Ensure local keys directory for DataProtection
+var keysFolder = Path.Combine(builder.Environment.ContentRootPath, "App_Data", "keys");
+if (!Directory.Exists(keysFolder)) Directory.CreateDirectory(keysFolder);
+builder.Services.AddDataProtection()
+    .PersistKeysToFileSystem(new DirectoryInfo(keysFolder));
 
 // Register your DbContext (adjust connection string name as needed)
 builder.Services.AddDbContext<DBContext>(options =>
@@ -22,6 +30,9 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
+builder.Services.AddScoped<IMenuService, MenuService>();
+builder.Services.AddScoped<IProductService, ProductService>();
+builder.Services.AddScoped<IInventoryService, InventoryService>();
 
 var app = builder.Build();
 

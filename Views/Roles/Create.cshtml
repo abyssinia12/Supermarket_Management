@@ -1,48 +1,299 @@
-﻿@model SuperMarket.Models.Role
+@model SuperMarket.Models.ViewModels.CreateRoleViewModel
 
 @{
-    ViewData["Title"] = "Create Role";
+    ViewData["Title"] = "Create Role & Assign Menus";
 }
 
-<h1>Create Role</h1>
+<div class="container my-4">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-action="Index">Roles</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Create Role</li>
+        </ol>
+    </nav>
 
-@* <h4>Role</h4> *@
-<hr />
-<div class="row">
-    <div class="col-md-4">
-        <form asp-action="Create">
-            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-            <div class="form-group">
-                <label asp-for="RoleName" class="control-label"></label>
-                <input asp-for="RoleName" class="form-control" />
-                <span asp-validation-for="RoleName" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="Description" class="control-label"></label>
-                <input asp-for="Description" class="form-control" />
-                <span asp-validation-for="Description" class="text-danger"></span>
-            </div>
-            <div class="form-group form-check">
-                <label class="form-check-label">
-                    <input class="form-check-input" asp-for="IsDeleted" /> @Html.DisplayNameFor(model => model.IsDeleted)
-                </label>
-            </div>
-            <div class="form-group">
-                <label asp-for="UpdatedAt" class="control-label"></label>
-                <input asp-for="UpdatedAt" class="form-control" />
-                <span asp-validation-for="UpdatedAt" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <input type="submit" value="Create" class="btn btn-primary" />
-            </div>
-        </form>
+    <div class="card shadow-sm border-1">
+        <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+            <h5 class="mb-0 text-dark">
+                <i class="bi bi-shield-plus text-primary me-2"></i> Create New Role
+            </h5>
+            <a asp-action="Index" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i> Back to Roles List
+            </a>
+        </div>
+
+        <div class="card-body p-4">
+            <form asp-action="Create" method="post" id="createRoleForm">
+                @Html.AntiForgeryToken()
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+                <!-- Section 1: Role Basic Details -->
+                <div class="card bg-light border-0 p-3 mb-4 rounded-3">
+                    <h6 class="fw-bold text-dark mb-3">
+                        <i class="bi bi-info-circle text-primary me-1"></i> Role Information
+                    </h6>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label asp-for="RoleName" class="form-label fw-semibold">
+                                Role Title <span class="text-danger">*</span>
+                            </label>
+                            <input asp-for="RoleName" class="form-control" placeholder="e.g. Store Manager, Cashier, Inventory Auditor" autofocus />
+                            <span asp-validation-for="RoleName" class="text-danger small"></span>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label asp-for="Description" class="form-label fw-semibold">Description</label>
+                            <input asp-for="Description" class="form-control" placeholder="Brief summary of duties and permissions" />
+                            <span asp-validation-for="Description" class="text-danger small"></span>
+                        </div>
+
+                        <div class="col-12">
+                            <div class="form-check form-switch pt-1">
+                                <input class="form-check-input" type="checkbox" asp-for="IsActive" id="roleActiveSwitch" />
+                                <label class="form-check-label fw-semibold" for="roleActiveSwitch">
+                                    Role is Active
+                                </label>
+                                <span class="text-muted small ms-2">(Users assigned to active roles can access authorized pages)</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 2: Assign Menus -->
+                <div class="mb-4">
+                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                        <div>
+                            <h5 class="fw-bold text-dark mb-0">
+                                <i class="bi bi-menu-button-wide text-primary me-2"></i> Assign Menus to this Role
+                            </h5>
+                            <div class="text-muted small">
+                                Select which menus, actions, and features users with this role are permitted to view and use.
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge bg-primary fs-6 px-3 py-2 rounded-pill shadow-sm" id="selectedCountBadge">
+                                <span id="selectedCount">0</span> of @Model.AvailableMenus.Count Menus Selected
+                            </span>
+                            <button type="button" class="btn btn-sm btn-outline-primary" id="btnSelectAll">
+                                <i class="bi bi-check-all me-1"></i> Select All
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" id="btnDeselectAll">
+                                <i class="bi bi-dash-circle me-1"></i> Deselect All
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Filter search for menus -->
+                    <div class="mb-3">
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text bg-white"><i class="bi bi-search text-muted"></i></span>
+                            <input type="text" id="menuSearchInput" class="form-control" placeholder="Filter menus by Title, Controller, or Action..." />
+                            <button type="button" class="btn btn-outline-secondary" id="btnClearSearch">Clear</button>
+                        </div>
+                    </div>
+
+                    @if (!Model.AvailableMenus.Any())
+                    {
+                        <div class="alert alert-warning" role="alert">
+                            <i class="bi bi-exclamation-triangle-fill me-2"></i> No menus found in the system.
+                            <a asp-controller="Menu" asp-action="Index" class="alert-link">Click here to manage or seed menus first</a>.
+                        </div>
+                    }
+                    else
+                    {
+                        var groupedMenus = Model.AvailableMenus.GroupBy(m => m.MenuCategory).OrderBy(g => g.Key);
+
+                        <div class="accordion" id="categoryAccordion">
+                            @foreach (var group in groupedMenus)
+                            {
+                                var catSafeId = "cat_" + Math.Abs(group.Key.GetHashCode());
+                                var catItemCount = group.Count();
+
+                                <div class="card border mb-3 rounded-2 shadow-sm category-card" data-category="@group.Key.ToLowerInvariant()">
+                                    <div class="card-header bg-white py-2 px-3 d-flex justify-content-between align-items-center">
+                                        <div class="d-flex align-items-center gap-2">
+                                            <span class="badge bg-secondary">@group.Key</span>
+                                            <span class="text-muted small">(@catItemCount items)</span>
+                                        </div>
+                                        <div class="d-flex gap-2">
+                                            <button type="button" class="btn btn-xs btn-outline-primary py-0 px-2 btn-cat-select" data-target="#@catSafeId">
+                                                Select Category
+                                            </button>
+                                            <button type="button" class="btn btn-xs btn-outline-secondary py-0 px-2 btn-cat-deselect" data-target="#@catSafeId">
+                                                Deselect
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="card-body p-3" id="@catSafeId">
+                                        <div class="row g-2">
+                                            @foreach (var item in group)
+                                            {
+                                                <div class="col-lg-4 col-md-6 menu-checkbox-item" data-text="@item.Title.ToLowerInvariant() @item.Controller.ToLowerInvariant() @item.Action.ToLowerInvariant()">
+                                                    <div class="form-check p-2 border rounded-2 h-100 bg-white menu-check-box transition-all">
+                                                        <input class="form-check-input ms-0 me-2 menu-checkbox"
+                                                               type="checkbox"
+                                                               name="SelectedMenuIds"
+                                                               value="@item.MenuId"
+                                                               id="menu_@item.MenuId"
+                                                               @(item.IsSelected ? "checked" : "") />
+                                                        <label class="form-check-label w-100" for="menu_@item.MenuId" style="cursor: pointer;">
+                                                            <div class="fw-semibold text-dark text-truncate" title="@item.Title">
+                                                                @item.Title
+                                                            </div>
+                                                            <div class="d-flex align-items-center gap-1 mt-1">
+                                                                <span class="badge bg-light text-muted border py-0 px-1" style="font-size: 0.72rem;">
+                                                                    @item.Controller/@item.Action
+                                                                </span>
+                                                                @if (item.IsMenu)
+                                                                {
+                                                                    <span class="badge bg-success-subtle text-success border border-success-subtle py-0 px-1" style="font-size: 0.7rem;" title="Shown in navigation menu">
+                                                                        Menu
+                                                                    </span>
+                                                                }
+                                                                else
+                                                                {
+                                                                    <span class="badge bg-secondary-subtle text-secondary py-0 px-1" style="font-size: 0.7rem;" title="Subordinate action endpoint">
+                                                                        Action
+                                                                    </span>
+                                                                }
+                                                                @if (item.IsTraceable)
+                                                                {
+                                                                    <span class="badge bg-info-subtle text-info border border-info-subtle py-0 px-1" style="font-size: 0.7rem;" title="Activity is audited">
+                                                                        Audit
+                                                                    </span>
+                                                                }
+                                                            </div>
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+
+                <!-- Form Submit Actions -->
+                <div class="border-top pt-3 d-flex justify-content-between align-items-center">
+                    <a asp-action="Index" class="btn btn-outline-secondary px-4">
+                        Cancel
+                    </a>
+                    <button type="submit" class="btn btn-primary px-4 py-2 fw-semibold">
+                        <i class="bi bi-shield-check me-1"></i> Save Role & Menus
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
 </div>
 
-<div>
-    <a asp-action="Index">Back to List</a>
-</div>
+<style>
+    .menu-check-box {
+        transition: all 0.15s ease-in-out;
+    }
+    .menu-check-box:hover {
+        border-color: #0d6efd !important;
+        background-color: #f8faff !important;
+    }
+    .btn-xs {
+        font-size: 0.75rem;
+        border-radius: 4px;
+    }
+</style>
 
 @section Scripts {
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+
+    <script>
+        function updateSelectedCount() {
+            var checkedCount = document.querySelectorAll('.menu-checkbox:checked').length;
+            document.getElementById('selectedCount').innerText = checkedCount;
+        }
+
+        // Checkbox change listener
+        document.querySelectorAll('.menu-checkbox').forEach(function (cb) {
+            cb.addEventListener('change', updateSelectedCount);
+        });
+
+        // Global Select All
+        document.getElementById('btnSelectAll').addEventListener('click', function () {
+            document.querySelectorAll('.menu-checkbox').forEach(function (cb) {
+                // only select if parent item is visible
+                var item = cb.closest('.menu-checkbox-item');
+                if (!item || item.style.display !== 'none') {
+                    cb.checked = true;
+                }
+            });
+            updateSelectedCount();
+        });
+
+        // Global Deselect All
+        document.getElementById('btnDeselectAll').addEventListener('click', function () {
+            document.querySelectorAll('.menu-checkbox').forEach(function (cb) {
+                cb.checked = false;
+            });
+            updateSelectedCount();
+        });
+
+        // Category Select
+        document.querySelectorAll('.btn-cat-select').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var targetId = this.getAttribute('data-target');
+                var container = document.querySelector(targetId);
+                if (container) {
+                    container.querySelectorAll('.menu-checkbox').forEach(function (cb) {
+                        cb.checked = true;
+                    });
+                    updateSelectedCount();
+                }
+            });
+        });
+
+        // Category Deselect
+        document.querySelectorAll('.btn-cat-deselect').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var targetId = this.getAttribute('data-target');
+                var container = document.querySelector(targetId);
+                if (container) {
+                    container.querySelectorAll('.menu-checkbox').forEach(function (cb) {
+                        cb.checked = false;
+                    });
+                    updateSelectedCount();
+                }
+            });
+        });
+
+        // Menu Search Filtering
+        var searchInput = document.getElementById('menuSearchInput');
+        searchInput.addEventListener('input', function () {
+            var q = this.value.toLowerCase().trim();
+            document.querySelectorAll('.category-card').forEach(function (card) {
+                var items = card.querySelectorAll('.menu-checkbox-item');
+                var anyVisible = false;
+
+                items.forEach(function (item) {
+                    var text = item.getAttribute('data-text') || '';
+                    if (!q || text.indexOf(q) !== -1) {
+                        item.style.display = '';
+                        anyVisible = true;
+                    } else {
+                        item.style.display = 'none';
+                    }
+                });
+
+                card.style.display = anyVisible ? '' : 'none';
+            });
+        });
+
+        document.getElementById('btnClearSearch').addEventListener('click', function () {
+            searchInput.value = '';
+            searchInput.dispatchEvent(new Event('input'));
+        });
+
+        // Initial count update
+        updateSelectedCount();
+    </script>
 }

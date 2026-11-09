@@ -1,0 +1,79 @@
+@model List<SuperMarket.Models.Location>
+@{
+    ViewData["Title"] = "Manage Locations";
+}
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show"><i class="bi bi-check-circle me-2"></i>@TempData["SuccessMessage"]<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+}
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show"><i class="bi bi-exclamation-triangle me-2"></i>@TempData["ErrorMessage"]<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="mb-0"><i class="bi bi-building text-secondary me-2"></i>Manage Locations</h2>
+    <a asp-action="CreateLocation" class="btn btn-primary btn-sm"><i class="bi bi-plus-circle me-1"></i>Add Location</a>
+</div>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+        @if (!Model.Any())
+        {
+            <div class="text-center py-5 text-muted">
+                <i class="bi bi-building fs-1 d-block mb-2"></i>
+                No locations yet. <a asp-action="CreateLocation">Add the first one.</a>
+            </div>
+        }
+        else
+        {
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>#</th>
+                        <th>Location Name</th>
+                        <th>Type</th>
+                        <th>Status</th>
+                        <th>Created</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var loc in Model)
+                    {
+                        <tr>
+                            <td class="text-muted small">@loc.LocationId</td>
+                            <td class="fw-semibold">@loc.LocationName</td>
+                            <td>
+                                <span class="badge @(loc.LocationType == "Warehouse" ? "bg-primary" : loc.LocationType == "Branch" ? "bg-info" : "bg-secondary")">
+                                    <i class="bi @(loc.LocationType == "Warehouse" ? "bi-box-seam" : loc.LocationType == "Branch" ? "bi-shop" : "bi-geo-alt") me-1"></i>@loc.LocationType
+                                </span>
+                            </td>
+                            <td>
+                                @if (loc.IsActive ?? true)
+                                {
+                                    <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Active</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary">Inactive</span>
+                                }
+                            </td>
+                            <td class="text-muted small">@loc.CreatedAt?.ToString("MMM d, yyyy")</td>
+                            <td class="text-end">
+                                <a asp-action="EditLocation" asp-route-id="@loc.LocationId" class="btn btn-outline-primary btn-sm me-1">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <a asp-action="DeleteLocation" asp-route-id="@loc.LocationId" class="btn btn-outline-danger btn-sm">
+                                    <i class="bi bi-trash"></i>
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+</div>
+

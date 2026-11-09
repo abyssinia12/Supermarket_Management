@@ -1,65 +1,170 @@
-﻿@model IEnumerable<SuperMarket.Models.Role>
+@model IEnumerable<SuperMarket.Models.ViewModels.RoleListViewModel>
 
 @{
-    ViewData["Title"] = "Index";
+    ViewData["Title"] = "Roles Management";
 }
 
-<h1>Index</h1>
+<div class="container my-4">
+    <!-- Flash Messages -->
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show shadow-sm mb-3" role="alert">
+            <i class="bi bi-check-circle-fill me-2"></i> @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
 
-<p>
-    <a asp-action="Create">Create New</a>
-</p>
-<table class="table">
-    <thead>
-        <tr>
-            <th>
-                @Html.DisplayNameFor(model => model.RoleName)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Description)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.CreatedAt)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.IsActive)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.IsDeleted)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.UpdatedAt)
-            </th>
-            <th></th>
-        </tr>
-    </thead>
-    <tbody>
-@foreach (var item in Model) {
-        <tr>
-            <td>
-                @Html.DisplayFor(modelItem => item.RoleName)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Description)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.CreatedAt)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.IsActive)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.IsDeleted)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.UpdatedAt)
-            </td>
-            <td>
-                <a asp-action="Edit" asp-route-id="@item.RoleId">Edit</a> |
-                <a asp-action="Details" asp-route-id="@item.RoleId">Details</a> |
-                <a asp-action="Delete" asp-route-id="@item.RoleId">Delete</a>
-            </td>
-        </tr>
-}
-    </tbody>
-</table>
+    <div class="card shadow-sm border-1 rounded-2">
+        <div class="card-header bg-white py-3 border-bottom d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <div>
+                <h4 class="mb-0 text-dark fw-normal">
+                    <i class="bi bi-shield-lock text-primary me-2"></i> Roles Management
+                </h4>
+                <div class="text-muted small">Configure user roles and their assigned navigation menus and permissions.</div>
+            </div>
+            <div class="d-flex gap-2">
+                <a asp-controller="Menu" asp-action="Index" class="btn btn-outline-secondary btn-sm">
+                    <i class="bi bi-menu-button-wide me-1"></i> Manage All Menus
+                </a>
+                <a asp-action="Create" class="btn btn-primary btn-sm">
+                    <i class="bi bi-plus-lg me-1"></i> Create New Role
+                </a>
+            </div>
+        </div>
+
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light">
+                        <tr class="text-secondary small fw-bold">
+                            <th class="ps-4 py-3">Role Title</th>
+                            <th class="py-3">Description</th>
+                            <th class="py-3 text-center" style="width: 120px;">Status</th>
+                            <th class="py-3" style="min-width: 220px;">Assigned Menus</th>
+                            <th class="py-3" style="width: 140px;">Created Date</th>
+                            <th class="pe-4 py-3 text-end" style="width: 160px;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (!Model.Any())
+                        {
+                            <tr>
+                                <td colspan="6" class="text-center py-5 text-muted">
+                                    <i class="bi bi-shield-slash fs-2 d-block mb-2 text-secondary"></i>
+                                    No roles found.
+                                    <div class="mt-2">
+                                        <a asp-action="Create" class="btn btn-sm btn-primary">Create Your First Role</a>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                        else
+                        {
+                            @foreach (var role in Model)
+                            {
+                                <tr>
+                                    <!-- Role Title -->
+                                    <td class="ps-4 fw-semibold text-dark">
+                                        <div class="d-flex align-items-center">
+                                            <span class="avatar-circle me-2">
+                                                <i class="bi bi-person-badge text-primary"></i>
+                                            </span>
+                                            <span>@role.RoleName</span>
+                                        </div>
+                                    </td>
+
+                                    <!-- Description -->
+                                    <td class="text-muted small">
+                                        @(string.IsNullOrEmpty(role.Description) ? "—" : role.Description)
+                                    </td>
+
+                                    <!-- Status -->
+                                    <td class="text-center">
+                                        @if (role.IsActive)
+                                        {
+                                            <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">
+                                                <i class="bi bi-check-circle me-1"></i> Active
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1">
+                                                <i class="bi bi-x-circle me-1"></i> Inactive
+                                            </span>
+                                        }
+                                    </td>
+
+                                    <!-- Assigned Menus -->
+                                    <td>
+                                        <div class="d-flex flex-wrap align-items-center gap-1">
+                                            @if (role.MenuCount > 0)
+                                            {
+                                                <span class="badge bg-primary px-2 py-1" title="Total assigned menus">
+                                                    <i class="bi bi-menu-button-wide me-1"></i> @role.MenuCount Menus
+                                                </span>
+                                                @foreach (var title in role.AssignedMenuTitles.Take(2))
+                                                {
+                                                    <span class="badge bg-light text-dark border py-1 px-2 small text-truncate" style="max-width: 140px;">
+                                                        @title
+                                                    </span>
+                                                }
+                                                @if (role.MenuCount > 2)
+                                                {
+                                                    <span class="badge bg-light text-muted border py-1 px-1 small">
+                                                        +@(role.MenuCount - 2) more
+                                                    </span>
+                                                }
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted small fst-italic">No menus assigned</span>
+                                            }
+                                        </div>
+                                    </td>
+
+                                    <!-- Created Date -->
+                                    <td class="text-muted small">
+                                        @(role.CreatedAt.HasValue ? role.CreatedAt.Value.ToString("MMM dd, yyyy") : "—")
+                                    </td>
+
+                                    <!-- Actions -->
+                                    <td class="pe-4 text-end">
+                                        <div class="btn-group btn-group-sm">
+                                            <a asp-action="Edit" asp-route-id="@role.RoleId" class="btn btn-outline-primary" title="Edit Role & Menus">
+                                                <i class="bi bi-pencil-square"></i> Edit
+                                            </a>
+                                            <a asp-action="Details" asp-route-id="@role.RoleId" class="btn btn-outline-secondary" title="View Details">
+                                                <i class="bi bi-info-circle"></i>
+                                            </a>
+                                            <a asp-action="Delete" asp-route-id="@role.RoleId" class="btn btn-outline-danger" title="Delete">
+                                                <i class="bi bi-trash"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card-footer bg-white border-top py-2 px-4 text-muted small d-flex justify-content-between align-items-center">
+            <span>Total Roles: <strong>@Model.Count()</strong></span>
+            <span>Tip: Assign menus when creating or editing a role to control accessible modules.</span>
+        </div>
+    </div>
+</div>
+
+<style>
+    .avatar-circle {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background-color: #eef2ff;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem;
+    }
+</style>

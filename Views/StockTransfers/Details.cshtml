@@ -1,0 +1,179 @@
+@model SuperMarket.Models.ViewModels.StockTransferDetailsViewModel
+@{
+    ViewData["Title"] = $"Transfer #{Model.TransferId}";
+    var statusColor = Model.Status switch
+    {
+        "Requested" => "warning",
+        "Approved" => "info",
+        "Dispatched" => "primary",
+        "Received" => "success",
+        "Cancelled" => "danger",
+        _ => "secondary"
+    };
+    var steps = new[] { "Requested", "Approved", "Dispatched", "Received" };
+    var currentStep = Array.IndexOf(steps, Model.Status);
+}
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show"><i class="bi bi-check-circle me-2"></i>@TempData["SuccessMessage"]<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+}
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show"><i class="bi bi-exclamation-triangle me-2"></i>@TempData["ErrorMessage"]<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h2 class="mb-0"><i class="bi bi-arrow-left-right text-secondary me-2"></i>Transfer #@Model.TransferId</h2>
+        <span class="badge bg-@statusColor fs-6 mt-1">@Model.Status</span>
+    </div>
+    <a asp-action="Index" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left me-1"></i>Back</a>
+</div>
+
+@if (Model.Status != "Cancelled")
+{
+    <!-- Status Timeline -->
+    <div class="card border-0 shadow-sm mb-3">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center position-relative">
+                <div class="position-absolute top-50 start-0 end-0" style="height:3px;background:#dee2e6;z-index:0;margin-top:-2px"></div>
+                @for (int i = 0; i < steps.Length; i++)
+                {
+                    var step = steps[i];
+                    var isDone = currentStep >= i;
+                    var isCurrent = currentStep == i;
+                    <div class="text-center position-relative" style="z-index:1">
+                        <div class="rounded-circle d-flex align-items-center justify-content-center mx-auto mb-1
+                            @(isDone ? "bg-success text-white" : "bg-white border border-secondary text-secondary")"
+                             style="width:36px;height:36px;font-size:14px">
+                            @if (isDone) { <i class="bi bi-check-lg"></i> } else { <span>@(i + 1)</span> }
+                        </div>
+                        <div class="small @(isCurrent ? "fw-bold text-success" : isDone ? "text-success" : "text-muted")">@step</div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+}
+
+<div class="row g-3">
+    <div class="col-md-7">
+        <!-- Transfer Header Info -->
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-header bg-white border-bottom py-3">
+                <h6 class="mb-0 fw-semibold"><i class="bi bi-info-circle me-2"></i>Transfer Information</h6>
+            </div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-sm-5">From</dt><dd class="col-sm-7 fw-semibold">@Model.FromLocationName</dd>
+                    <dt class="col-sm-5">To</dt><dd class="col-sm-7 fw-semibold">@Model.ToLocationName</dd>
+                    <dt class="col-sm-5">Requested By</dt><dd class="col-sm-7">@Model.RequestedByUser</dd>
+                    <dt class="col-sm-5">Approved By</dt><dd class="col-sm-7">@(Model.ApprovedByUser ?? "—")</dd>
+                    <dt class="col-sm-5">Requested At</dt><dd class="col-sm-7">@Model.RequestedAt?.ToString("MMM d, yyyy HH:mm")</dd>
+                    <dt class="col-sm-5">Completed At</dt><dd class="col-sm-7">@(Model.CompletedAt?.ToString("MMM d, yyyy HH:mm") ?? "—")</dd>
+                    @if (!string.IsNullOrEmpty(Model.Notes))
+                    {
+                        <dt class="col-sm-5">Notes</dt><dd class="col-sm-7">@Model.Notes</dd>
+                    }
+                </dl>
+            </div>
+        </div>
+
+        <!-- Items Table -->
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-bottom py-3">
+                <h6 class="mb-0 fw-semibold"><i class="bi bi-box-seam me-2"></i>Transfer Items (@Model.Items.Count)</h6>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-sm mb-0 align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Product</th>
+                            <th>SKU</th>
+                            <th>Batch</th>
+                            <th>Expiry</th>
+                            <th class="text-end">Qty</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model.Items)
+                        {
+                            <tr>
+                                <td class="fw-semibold small">@item.ProductName</td>
+                                <td class="text-muted small">@item.ProductSku</td>
+                                <td class="small">@item.BatchNumber</td>
+                                <td class="small text-muted">@(item.ExpirationDate?.ToString("MMM d, yyyy") ?? "N/A")</td>
+                                <td class="text-end fw-bold">@item.Quantity.ToString("N0")</td>
+                            </tr>
+                        }
+                    </tbody>
+                    <tfoot class="table-light">
+                        <tr>
+                            <td colspan="4" class="text-end fw-bold">Total Units:</td>
+                            <td class="text-end fw-bold">@Model.Items.Sum(i => i.Quantity).ToString("N0")</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Action Panel -->
+    <div class="col-md-5">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-bottom py-3">
+                <h6 class="mb-0 fw-semibold"><i class="bi bi-lightning me-2"></i>Actions</h6>
+            </div>
+            <div class="card-body d-grid gap-2">
+                @if (Model.Status == "Requested")
+                {
+                    <form asp-action="Approve" asp-route-id="@Model.TransferId" method="post">
+                        <button type="submit" class="btn btn-info text-white w-100">
+                            <i class="bi bi-check-circle me-2"></i>Approve Transfer
+                        </button>
+                    </form>
+                    <form asp-action="Cancel" asp-route-id="@Model.TransferId" method="post">
+                        <button type="submit" class="btn btn-outline-danger w-100" onclick="return confirm('Cancel this transfer?')">
+                            <i class="bi bi-x-circle me-2"></i>Cancel
+                        </button>
+                    </form>
+                }
+                else if (Model.Status == "Approved")
+                {
+                    <form asp-action="Dispatch" asp-route-id="@Model.TransferId" method="post">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="bi bi-truck me-2"></i>Mark as Dispatched
+                        </button>
+                    </form>
+                    <form asp-action="Cancel" asp-route-id="@Model.TransferId" method="post">
+                        <button type="submit" class="btn btn-outline-danger w-100" onclick="return confirm('Cancel this transfer?')">
+                            <i class="bi bi-x-circle me-2"></i>Cancel
+                        </button>
+                    </form>
+                }
+                else if (Model.Status == "Dispatched")
+                {
+                    <form asp-action="Receive" asp-route-id="@Model.TransferId" method="post">
+                        <button type="submit" class="btn btn-success w-100" onclick="return confirm('Mark as received? This will update stock levels.')">
+                            <i class="bi bi-box-arrow-in-down me-2"></i>Mark as Received
+                        </button>
+                    </form>
+                }
+                else if (Model.Status == "Received")
+                {
+                    <div class="alert alert-success mb-0 text-center">
+                        <i class="bi bi-check-circle fs-4 d-block mb-1"></i>Transfer Completed
+                    </div>
+                }
+                else if (Model.Status == "Cancelled")
+                {
+                    <div class="alert alert-secondary mb-0 text-center">
+                        <i class="bi bi-x-circle fs-4 d-block mb-1"></i>Transfer Cancelled
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+

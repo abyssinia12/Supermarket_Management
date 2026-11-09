@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 
@@ -30,6 +30,8 @@ public partial class DBContext : DbContext
     public virtual DbSet<InventoryTransaction> InventoryTransactions { get; set; }
 
     public virtual DbSet<Location> Locations { get; set; }
+
+    public virtual DbSet<Menu> Menus { get; set; }
 
     public virtual DbSet<Permission> Permissions { get; set; }
 
@@ -182,6 +184,16 @@ public partial class DBContext : DbContext
             entity.Property(e => e.IsActive).HasDefaultValue(true);
         });
 
+        modelBuilder.Entity<Menu>(entity =>
+        {
+            entity.HasKey(e => e.MenuId).HasName("PK_Menus");
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("(getutcdate())");
+            entity.Property(e => e.IsActive).HasDefaultValue(true);
+            entity.Property(e => e.IsMenu).HasDefaultValue(false);
+            entity.Property(e => e.IsTraceable).HasDefaultValue(false);
+            entity.Property(e => e.SortOrder).HasDefaultValue(0);
+        });
+
         modelBuilder.Entity<Permission>(entity =>
         {
             entity.HasKey(e => e.PermissionId).HasName("PK__Permissi__EFA6FB0FFBC1B28B");
@@ -263,6 +275,23 @@ public partial class DBContext : DbContext
                         j.ToTable("RolePermissions");
                         j.IndexerProperty<int>("RoleId").HasColumnName("RoleID");
                         j.IndexerProperty<int>("PermissionId").HasColumnName("PermissionID");
+                    });
+
+            entity.HasMany(d => d.Menus).WithMany(p => p.Roles)
+                .UsingEntity<Dictionary<string, object>>(
+                    "RoleMenu",
+                    r => r.HasOne<Menu>().WithMany()
+                        .HasForeignKey("MenuId")
+                        .HasConstraintName("FK_RoleMenu_Menus"),
+                    l => l.HasOne<Role>().WithMany()
+                        .HasForeignKey("RoleId")
+                        .HasConstraintName("FK_RoleMenu_Roles"),
+                    j =>
+                    {
+                        j.HasKey("RoleId", "MenuId").HasName("PK_RoleMenus");
+                        j.ToTable("RoleMenus");
+                        j.IndexerProperty<int>("RoleId").HasColumnName("RoleID");
+                        j.IndexerProperty<int>("MenuId").HasColumnName("MenuID");
                     });
         });
 

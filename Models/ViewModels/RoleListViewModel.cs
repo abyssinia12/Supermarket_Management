@@ -1,4 +1,5 @@
-﻿using System;
+using System;
+using System.Collections.Generic;
 
 namespace SuperMarket.Models.ViewModels
 {
@@ -6,7 +7,7 @@ namespace SuperMarket.Models.ViewModels
     {
         public int RoleId { get; set; }
 
-        public string RoleName { get; set; } = null!;
+        public string RoleName { get; set; } = string.Empty;
 
         public string? Description { get; set; }
 
@@ -16,5 +17,11 @@ namespace SuperMarket.Models.ViewModels
 
         // Displays total active users assigned to this role
         public int UserCount { get; set; }
+
+        // Displays total menus assigned to this role
+        public int MenuCount { get; set; }
+
+        // Preview of assigned menus for badges
+        public List<string> AssignedMenuTitles { get; set; } = new();
     }
 }

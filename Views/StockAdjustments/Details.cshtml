@@ -1,0 +1,63 @@
+@model SuperMarket.Models.ViewModels.StockAdjustmentListViewModel
+@{
+    ViewData["Title"] = "Adjustment Details";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="mb-0"><i class="bi bi-clipboard-check text-info me-2"></i>Adjustment Details</h2>
+    <a asp-action="Index" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left me-1"></i>Back</a>
+</div>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show"><i class="bi bi-check-circle me-2"></i>@TempData["SuccessMessage"]<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+}
+
+<div class="card border-0 shadow-sm" style="max-width:650px">
+    <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+        <span class="fw-semibold">Adjustment #@Model.AdjustmentId</span>
+        @if (Model.Status == "Pending") { <span class="badge bg-warning text-dark fs-6">Pending</span> }
+        else if (Model.Status == "Approved") { <span class="badge bg-success fs-6">Approved</span> }
+        else { <span class="badge bg-danger fs-6">Rejected</span> }
+    </div>
+    <div class="card-body">
+        <dl class="row mb-0">
+            <dt class="col-sm-4">Product</dt><dd class="col-sm-8 fw-semibold">@Model.ProductName</dd>
+            <dt class="col-sm-4">Batch</dt><dd class="col-sm-8">@(Model.BatchNumber ?? "—")</dd>
+            <dt class="col-sm-4">Location</dt><dd class="col-sm-8">@Model.LocationName</dd>
+            <dt class="col-sm-4">Type</dt>
+            <dd class="col-sm-8">
+                @{
+                    var typeColor = Model.AdjustmentType switch
+                    {
+                        "Damage" => "danger", "Loss" => "danger", "Expiry" => "warning",
+                        "Correction" => "info", "Count" => "secondary", _ => "secondary"
+                    };
+                }
+                <span class="badge bg-@typeColor">@Model.AdjustmentType</span>
+            </dd>
+            <dt class="col-sm-4">Quantity</dt>
+            <dd class="col-sm-8 fw-bold @(Model.Quantity < 0 ? "text-danger" : "text-success")">
+                @(Model.Quantity >= 0 ? "+" : "")@Model.Quantity.ToString("N3")
+            </dd>
+            <dt class="col-sm-4">Reason</dt><dd class="col-sm-8">@Model.Reason</dd>
+            <dt class="col-sm-4">Reported By</dt><dd class="col-sm-8">@Model.ReportedByUser</dd>
+            <dt class="col-sm-4">Approved By</dt><dd class="col-sm-8">@(Model.ApprovedByUser ?? "—")</dd>
+            <dt class="col-sm-4">Date</dt><dd class="col-sm-8">@Model.CreatedAt?.ToString("MMM d, yyyy HH:mm")</dd>
+        </dl>
+    </div>
+    @if (Model.Status == "Pending")
+    {
+        <div class="card-footer bg-white d-flex gap-2">
+            <form asp-action="Approve" asp-route-id="@Model.AdjustmentId" method="post">
+                <button type="submit" class="btn btn-success" onclick="return confirm('Approve and update stock?')">
+                    <i class="bi bi-check-circle me-1"></i>Approve
+                </button>
+            </form>
+            <form asp-action="Reject" asp-route-id="@Model.AdjustmentId" method="post">
+                <button type="submit" class="btn btn-danger"><i class="bi bi-x-circle me-1"></i>Reject</button>
+            </form>
+        </div>
+    }
+</div>
+

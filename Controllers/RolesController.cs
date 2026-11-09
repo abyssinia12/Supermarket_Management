@@ -1,4 +1,4 @@
-﻿//using System;
+//using System;
 //using System.Collections.Generic;
 //using System.Linq;
 //using System.Threading.Tasks;
@@ -292,130 +292,260 @@
 
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SuperMarket.Models;
+using SuperMarket.Models.ViewModels;
+using SuperMarket.Services;
 
 namespace SuperMarket.Controllers
 {
     public class RolesController : Controller
     {
         private readonly DBContext _context;
+        private readonly IMenuService _menuService;
 
-        public RolesController(DBContext context)
+        public RolesController(DBContext context, IMenuService menuService)
         {
             _context = context;
+            _menuService = menuService;
         }
 
         // GET: Roles
         public async Task<IActionResult> Index()
         {
-            return View(await _context.Roles.ToListAsync());
+            var roles = await _context.Roles
+                .Where(r => !r.IsDeleted)
+                .Include(r => r.Users)
+                .OrderBy(r => r.RoleName)
+                .ToListAsync();
+
+            var menuCounts = await _menuService.GetRoleMenuCountsAsync();
+            var menuTitles = await _menuService.GetRoleMenuTitlesAsync();
+
+            var viewModels = roles.Select(r => new RoleListViewModel
+            {
+                RoleId = r.RoleId,
+                RoleName = r.RoleName,
+                Description = r.Description,
+                IsActive = r.IsActive,
+                CreatedAt = r.CreatedAt,
+                UserCount = r.Users.Count(u => !u.IsDeleted && u.IsActive == true),
+                MenuCount = menuCounts.ContainsKey(r.RoleId) ? menuCounts[r.RoleId] : 0,
+                AssignedMenuTitles = menuTitles.ContainsKey(r.RoleId) ? menuTitles[r.RoleId] : new List<string>()
+            }).ToList();
+
+            return View(viewModels);
         }
 
         // GET: Roles/Details/5
         public async Task<IActionResult> Details(int? id)
         {
-            if (id == null)
-                return NotFound();
+            if (id == null) return NotFound();
 
             var role = await _context.Roles
-                .FirstOrDefaultAsync(r => r.RoleId == id);
+                .Include(r => r.Users)
+                .FirstOrDefaultAsync(r => r.RoleId == id && !r.IsDeleted);
 
-            if (role == null)
-                return NotFound();
+            if (role == null) return NotFound();
+
+            var assignedMenus = await _menuService.GetMenusForRoleAsync(role.RoleId);
+            ViewBag.AssignedMenus = assignedMenus;
 
             return View(role);
         }
 
         // GET: Roles/Create
-        public IActionResult Create()
+        [HttpGet]
+        public async Task<IActionResult> Create()
         {
-            return View();
+            var allMenus = await _menuService.GetAllAsync();
+
+            var model = new CreateRoleViewModel
+            {
+                IsActive = true,
+                AvailableMenus = allMenus.Select(m => new MenuSelectionItemViewModel
+                {
+                    MenuId = m.MenuId,
+                    Title = m.Title,
+                    Controller = m.Controller,
+                    Action = m.Action,
+                    MenuCategory = m.MenuCategory,
+                    IsMenu = m.IsMenu,
+                    IsTraceable = m.IsTraceable,
+                    IsActive = m.IsActive,
+                    IsSelected = false
+                }).OrderBy(m => m.MenuCategory).ThenBy(m => m.Title).ToList()
+            };
+
+            return View(model);
         }
 
         // POST: Roles/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(
-            [Bind("RoleName,Description")] Role role)
+        public async Task<IActionResult> Create(CreateRoleViewModel model)
         {
             if (ModelState.IsValid)
             {
-                role.CreatedAt = DateTime.Now;
-                role.IsActive = true;
-                role.IsDeleted = false;
+                bool exists = await _context.Roles
+                    .AnyAsync(r => r.RoleName == model.RoleName && !r.IsDeleted);
 
-                _context.Roles.Add(role);
-                await _context.SaveChangesAsync();
+                if (exists)
+                {
+                    ModelState.AddModelError("RoleName", "A role with this title already exists.");
+                }
+                else
+                {
+                    var role = new Role
+                    {
+                        RoleName = model.RoleName.Trim(),
+                        Description = model.Description?.Trim(),
+                        CreatedAt = DateTime.UtcNow,
+                        IsActive = model.IsActive,
+                        IsDeleted = false
+                    };
 
-                return RedirectToAction(nameof(Index));
+                    _context.Roles.Add(role);
+                    await _context.SaveChangesAsync();
+
+                    // Assign the selected menus to this new role
+                    if (model.SelectedMenuIds != null && model.SelectedMenuIds.Any())
+                    {
+                        await _menuService.SetRoleMenusAsync(role.RoleId, model.SelectedMenuIds);
+                    }
+
+                    TempData["SuccessMessage"] = $"Role '{role.RoleName}' created successfully with {model.SelectedMenuIds?.Count ?? 0} assigned menu(s)!";
+                    return RedirectToAction(nameof(Index));
+                }
             }
 
-            return View(role);
+            // Re-populate AvailableMenus if validation fails
+            var allMenus = await _menuService.GetAllAsync();
+            var selectedSet = new HashSet<int>(model.SelectedMenuIds ?? new List<int>());
+            model.AvailableMenus = allMenus.Select(m => new MenuSelectionItemViewModel
+            {
+                MenuId = m.MenuId,
+                Title = m.Title,
+                Controller = m.Controller,
+                Action = m.Action,
+                MenuCategory = m.MenuCategory,
+                IsMenu = m.IsMenu,
+                IsTraceable = m.IsTraceable,
+                IsActive = m.IsActive,
+                IsSelected = selectedSet.Contains(m.MenuId)
+            }).OrderBy(m => m.MenuCategory).ThenBy(m => m.Title).ToList();
+
+            return View(model);
         }
 
         // GET: Roles/Edit/5
+        [HttpGet]
         public async Task<IActionResult> Edit(int? id)
         {
-            if (id == null)
-                return NotFound();
+            if (id == null) return NotFound();
 
-            var role = await _context.Roles.FindAsync(id);
+            var role = await _context.Roles.FirstOrDefaultAsync(r => r.RoleId == id && !r.IsDeleted);
+            if (role == null) return NotFound();
 
-            if (role == null)
-                return NotFound();
+            var assignedMenuIds = await _menuService.GetMenuIdsForRoleAsync(role.RoleId);
+            var selectedSet = new HashSet<int>(assignedMenuIds);
+            var allMenus = await _menuService.GetAllAsync();
 
-            return View(role);
+            var model = new EditRoleViewModel
+            {
+                RoleId = role.RoleId,
+                RoleName = role.RoleName,
+                Description = role.Description,
+                IsActive = role.IsActive,
+                SelectedMenuIds = assignedMenuIds,
+                AvailableMenus = allMenus.Select(m => new MenuSelectionItemViewModel
+                {
+                    MenuId = m.MenuId,
+                    Title = m.Title,
+                    Controller = m.Controller,
+                    Action = m.Action,
+                    MenuCategory = m.MenuCategory,
+                    IsMenu = m.IsMenu,
+                    IsTraceable = m.IsTraceable,
+                    IsActive = m.IsActive,
+                    IsSelected = selectedSet.Contains(m.MenuId)
+                }).OrderBy(m => m.MenuCategory).ThenBy(m => m.Title).ToList()
+            };
+
+            return View(model);
         }
 
         // POST: Roles/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(
-            int id,
-            [Bind("RoleId,RoleName,Description,CreatedAt,IsActive,IsDeleted,UpdatedAt")]
-            Role role)
+        public async Task<IActionResult> Edit(int id, EditRoleViewModel model)
         {
-            if (id != role.RoleId)
-                return NotFound();
+            if (id != model.RoleId) return NotFound();
 
             if (ModelState.IsValid)
             {
-                try
-                {
-                    role.UpdatedAt = DateTime.Now;
+                var role = await _context.Roles.FirstOrDefaultAsync(r => r.RoleId == id && !r.IsDeleted);
+                if (role == null) return NotFound();
 
-                    _context.Update(role);
+                bool exists = await _context.Roles
+                    .AnyAsync(r => r.RoleName == model.RoleName && r.RoleId != id && !r.IsDeleted);
+
+                if (exists)
+                {
+                    ModelState.AddModelError("RoleName", "Another role with this title already exists.");
+                }
+                else
+                {
+                    role.RoleName = model.RoleName.Trim();
+                    role.Description = model.Description?.Trim();
+                    role.IsActive = model.IsActive;
+                    role.UpdatedAt = DateTime.UtcNow;
+
                     await _context.SaveChangesAsync();
-                }
-                catch (DbUpdateConcurrencyException)
-                {
-                    if (!RoleExists(role.RoleId))
-                        return NotFound();
 
-                    throw;
-                }
+                    // Update assigned menus
+                    await _menuService.SetRoleMenusAsync(role.RoleId, model.SelectedMenuIds ?? new List<int>());
 
-                return RedirectToAction(nameof(Index));
+                    TempData["SuccessMessage"] = $"Role '{role.RoleName}' updated successfully with {model.SelectedMenuIds?.Count ?? 0} assigned menu(s)!";
+                    return RedirectToAction(nameof(Index));
+                }
             }
 
-            return View(role);
+            var allMenus = await _menuService.GetAllAsync();
+            var selectedSet = new HashSet<int>(model.SelectedMenuIds ?? new List<int>());
+            model.AvailableMenus = allMenus.Select(m => new MenuSelectionItemViewModel
+            {
+                MenuId = m.MenuId,
+                Title = m.Title,
+                Controller = m.Controller,
+                Action = m.Action,
+                MenuCategory = m.MenuCategory,
+                IsMenu = m.IsMenu,
+                IsTraceable = m.IsTraceable,
+                IsActive = m.IsActive,
+                IsSelected = selectedSet.Contains(m.MenuId)
+            }).OrderBy(m => m.MenuCategory).ThenBy(m => m.Title).ToList();
+
+            return View(model);
         }
 
         // GET: Roles/Delete/5
         public async Task<IActionResult> Delete(int? id)
         {
-            if (id == null)
-                return NotFound();
+            if (id == null) return NotFound();
 
             var role = await _context.Roles
-                .FirstOrDefaultAsync(r => r.RoleId == id);
+                .Include(r => r.Users)
+                .FirstOrDefaultAsync(r => r.RoleId == id && !r.IsDeleted);
 
-            if (role == null)
-                return NotFound();
+            if (role == null) return NotFound();
+
+            var assignedMenus = await _menuService.GetMenusForRoleAsync(role.RoleId);
+            ViewBag.AssignedMenus = assignedMenus;
 
             return View(role);
         }
@@ -426,11 +556,13 @@ namespace SuperMarket.Controllers
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
             var role = await _context.Roles.FindAsync(id);
-
             if (role != null)
             {
-                _context.Roles.Remove(role);
+                // Soft delete
+                role.IsDeleted = true;
+                role.UpdatedAt = DateTime.UtcNow;
                 await _context.SaveChangesAsync();
+                TempData["SuccessMessage"] = $"Role '{role.RoleName}' was deleted.";
             }
 
             return RedirectToAction(nameof(Index));
@@ -438,7 +570,7 @@ namespace SuperMarket.Controllers
 
         private bool RoleExists(int id)
         {
-            return _context.Roles.Any(r => r.RoleId == id);
+            return _context.Roles.Any(r => r.RoleId == id && !r.IsDeleted);
         }
     }
 }

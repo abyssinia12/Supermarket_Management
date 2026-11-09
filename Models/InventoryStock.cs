@@ -27,6 +27,11 @@ public partial class InventoryStock
     [Column(TypeName = "decimal(18, 3)")]
     public decimal Quantity { get; set; }
 
+    [Column(TypeName = "decimal(18, 3)")]
+    public decimal MinStockLevel { get; set; }
+
+    [Column(TypeName = "decimal(18, 3)")]
+    public decimal ReorderPoint { get; set; }
     public DateTime? LastUpdated { get; set; }
 
     [ForeignKey("BatchId")]

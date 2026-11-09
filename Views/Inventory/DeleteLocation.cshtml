@@ -1,0 +1,33 @@
+@model SuperMarket.Models.Location
+@{
+    ViewData["Title"] = "Delete Location";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="mb-0"><i class="bi bi-trash text-danger me-2"></i>Delete Location</h2>
+    <a asp-action="Locations" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left me-1"></i>Back</a>
+</div>
+
+<div class="card border-0 shadow-sm border-danger" style="max-width:500px">
+    <div class="card-header bg-danger text-white py-3">
+        <h6 class="mb-0"><i class="bi bi-exclamation-triangle me-2"></i>Confirm Deletion</h6>
+    </div>
+    <div class="card-body">
+        <div class="alert alert-warning">
+            <i class="bi bi-exclamation-triangle me-2"></i>
+            <strong>Warning:</strong> Any stock records associated with this location will remain but the location will be deactivated.
+        </div>
+        <dl class="row mb-0">
+            <dt class="col-sm-4">Name</dt><dd class="col-sm-8 fw-semibold">@Model.LocationName</dd>
+            <dt class="col-sm-4">Type</dt><dd class="col-sm-8">@Model.LocationType</dd>
+            <dt class="col-sm-4">Status</dt><dd class="col-sm-8">@(Model.IsActive == true ? "Active" : "Inactive")</dd>
+        </dl>
+    </div>
+    <div class="card-footer bg-white d-flex gap-2">
+        <form asp-action="DeleteLocation" asp-route-id="@Model.LocationId" method="post">
+            <button type="submit" class="btn btn-danger"><i class="bi bi-trash me-1"></i>Yes, Delete</button>
+        </form>
+        <a asp-action="Locations" class="btn btn-outline-secondary">Cancel</a>
+    </div>
+</div>
+

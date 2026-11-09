@@ -1,0 +1,278 @@
+@model SuperMarket.Models.ViewModels.ProductDetailsViewModel
+
+@{
+    ViewData["Title"] = "Product Details - " + Model.Product.ProductName;
+}
+
+<div class="container-fluid px-4 my-4" style="max-width: 1100px;">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-action="Index">Products</a></li>
+            <li class="breadcrumb-item active" aria-current="page">@Model.Product.ProductName</li>
+        </ol>
+    </nav>
+
+    <!-- Top Action Bar -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+        <div>
+            <h3 class="mb-0 text-dark fw-normal">
+                <i class="bi bi-box-seam text-primary me-2"></i> @Model.Product.ProductName
+            </h3>
+            <div class="text-muted small">
+                SKU: <span class="font-monospace text-dark fw-bold">@Model.Product.Sku</span> | Barcode: <span class="font-monospace text-dark">@Model.Product.Barcode</span>
+            </div>
+        </div>
+        <div class="d-flex gap-2">
+            <a asp-controller="ProductBatches" asp-action="Create" asp-route-productId="@Model.Product.ProductId" class="btn btn-success btn-sm">
+                <i class="bi bi-plus-circle me-1"></i> Add Batch
+            </a>
+            <a asp-action="Edit" asp-route-id="@Model.Product.ProductId" class="btn btn-primary btn-sm">
+                <i class="bi bi-pencil-square me-1"></i> Edit Product
+            </a>
+            <a asp-action="Index" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-arrow-left me-1"></i> Back to Products
+            </a>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Left Column: Product Info & Pricing -->
+        <div class="col-lg-5">
+            <div class="card shadow-sm border-1 rounded-2 mb-4">
+                <div class="card-header bg-white py-3 border-bottom">
+                    <h6 class="mb-0 fw-bold text-dark">
+                        <i class="bi bi-info-circle text-primary me-2"></i> Product Information
+                    </h6>
+                </div>
+                <div class="card-body p-3">
+                    <dl class="row mb-0 g-2">
+                        <dt class="col-sm-5 text-muted small">Product Name:</dt>
+                        <dd class="col-sm-7 fw-bold text-dark mb-2">@Model.Product.ProductName</dd>
+
+                        <dt class="col-sm-5 text-muted small">Product Code (SKU):</dt>
+                        <dd class="col-sm-7 mb-2"><span class="badge bg-light text-dark border font-monospace">@Model.Product.Sku</span></dd>
+
+                        <dt class="col-sm-5 text-muted small">Barcode:</dt>
+                        <dd class="col-sm-7 mb-2"><span class="font-monospace text-secondary"><i class="bi bi-upc-scan me-1"></i>@Model.Product.Barcode</span></dd>
+
+                        <dt class="col-sm-5 text-muted small">Category:</dt>
+                        <dd class="col-sm-7 mb-2"><span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">@Model.CategoryName</span></dd>
+
+                        <dt class="col-sm-5 text-muted small">Unit of Measure:</dt>
+                        <dd class="col-sm-7 mb-2"><span class="badge bg-light text-muted border">@Model.Product.UnitOfMeasure</span></dd>
+
+                        <dt class="col-sm-5 text-muted small">Status:</dt>
+                        <dd class="col-sm-7 mb-2">
+                            @if (Model.Product.IsActive == true)
+                            {
+                                <span class="badge bg-success-subtle text-success border border-success-subtle">Active</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-danger-subtle text-danger border border-danger-subtle">Inactive</span>
+                            }
+                        </dd>
+
+                        @if (!string.IsNullOrEmpty(Model.Product.Description))
+                        {
+                            <dt class="col-12 text-muted small mt-2">Description:</dt>
+                            <dd class="col-12 text-secondary bg-light p-2 rounded small mb-0">
+                                @Model.Product.Description
+                            </dd>
+                        }
+                    </dl>
+                </div>
+            </div>
+
+            <!-- Financial / Margin Card -->
+            <div class="card shadow-sm border-1 rounded-2">
+                <div class="card-header bg-white py-3 border-bottom">
+                    <h6 class="mb-0 fw-bold text-dark">
+                        <i class="bi bi-currency-dollar text-success me-2"></i> Pricing & Margin
+                    </h6>
+                </div>
+                <div class="card-body p-3">
+                    <div class="row g-3 text-center">
+                        <div class="col-4">
+                            <div class="text-muted small">Cost Price</div>
+                            <div class="fs-5 fw-bold text-muted mt-1">$@Model.Product.PurchaseCost.ToString("F2")</div>
+                        </div>
+                        <div class="col-4 border-start border-end">
+                            <div class="text-muted small">Selling Price</div>
+                            <div class="fs-5 fw-bold text-dark mt-1">$@Model.Product.SellingPrice.ToString("F2")</div>
+                        </div>
+                        <div class="col-4">
+                            <div class="text-muted small">Gross Margin</div>
+                            <div class="fs-5 fw-bold text-success mt-1">@Model.ProfitMargin%</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Stock Summary & Batches Table -->
+        <div class="col-lg-7">
+            <!-- Stock Level Card -->
+            <div class="card shadow-sm border-1 rounded-2 mb-4">
+                <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0 fw-bold text-dark">
+                        <i class="bi bi-bar-chart-steps text-primary me-2"></i> Stock Level & Availability
+                    </h6>
+                    <span class="badge @(Model.TotalStock <= 0 ? "bg-danger" : (Model.TotalStock <= Model.Product.MinStockLevel ? "bg-warning text-dark" : "bg-success")) px-3 py-1 fs-6">
+                        @Model.StockStatus
+                    </span>
+                </div>
+                <div class="card-body p-3">
+                    <div class="row g-3 align-items-center">
+                        <div class="col-sm-6 text-center border-end">
+                            <div class="text-muted small">Current Total Stock</div>
+                            <div class="display-6 fw-bold @(Model.TotalStock <= 0 ? "text-danger" : (Model.TotalStock <= Model.Product.MinStockLevel ? "text-warning" : "text-success"))">
+                                @Model.TotalStock <span class="fs-6 fw-normal text-muted">@Model.Product.UnitOfMeasure</span>
+                            </div>
+                            <div class="small text-muted mt-1">Minimum Alert Threshold: @Model.Product.MinStockLevel @Model.Product.UnitOfMeasure</div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="fw-semibold text-secondary small mb-2">Stock by Storage Location:</div>
+                            @if (Model.StockByLocation.Any())
+                            {
+                                <ul class="list-group list-group-flush small">
+                                    @foreach (var loc in Model.StockByLocation)
+                                    {
+                                        <li class="list-group-item d-flex justify-content-between align-items-center px-0 py-1">
+                                            <span class="text-dark"><i class="bi bi-geo-alt text-muted me-1"></i>@loc.Key</span>
+                                            <span class="badge bg-light text-dark border">@loc.Value @Model.Product.UnitOfMeasure</span>
+                                        </li>
+                                    }
+                                </ul>
+                            }
+                            else
+                            {
+                                <div class="text-muted small fst-italic">No stock recorded yet.</div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Batches Table Card -->
+            <div class="card shadow-sm border-1 rounded-2">
+                <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="mb-0 fw-bold text-dark">
+                            <i class="bi bi-boxes text-info me-2"></i> Product Batches & Expiry Dates
+                        </h6>
+                        <div class="text-muted" style="font-size: 0.75rem;">Recorded batches, expiration dates, and quantities</div>
+                    </div>
+                    <a asp-controller="ProductBatches" asp-action="Create" asp-route-productId="@Model.Product.ProductId" class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-plus-lg me-1"></i> New Batch
+                    </a>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="bg-light">
+                                <tr class="text-secondary small fw-bold">
+                                    <th class="ps-3 py-2">Batch Number</th>
+                                    <th class="py-2">Manufacture</th>
+                                    <th class="py-2">Expiration</th>
+                                    <th class="py-2 text-end">Unit Cost</th>
+                                    <th class="py-2 text-center">Available Qty</th>
+                                    <th class="pe-3 py-2 text-end">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (!Model.Batches.Any())
+                                {
+                                    <tr>
+                                        <td colspan="6" class="text-center py-4 text-muted small">
+                                            <i class="bi bi-boxes fs-3 d-block mb-1 text-secondary"></i>
+                                            No batches registered for this product yet.
+                                            <div class="mt-2">
+                                                <a asp-controller="ProductBatches" asp-action="Create" asp-route-productId="@Model.Product.ProductId" class="btn btn-xs btn-primary">
+                                                    Record First Batch
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                                else
+                                {
+                                    @foreach (var b in Model.Batches)
+                                    {
+                                        <tr>
+                                            <!-- Batch Number -->
+                                            <td class="ps-3 fw-semibold font-monospace">
+                                                @b.BatchNumber
+                                            </td>
+
+                                            <!-- Manufacture Date -->
+                                            <td class="small text-muted">
+                                                @(b.ManufactureDate.HasValue ? b.ManufactureDate.Value.ToString("yyyy-MM-dd") : "—")
+                                            </td>
+
+                                            <!-- Expiration Date & Status -->
+                                            <td>
+                                                @if (b.ExpirationDate.HasValue)
+                                                {
+                                                    <span class="small font-monospace">@b.ExpirationDate.Value.ToString("yyyy-MM-dd")</span>
+                                                    @if (b.ExpiryStatus == "Expired")
+                                                    {
+                                                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle py-0 px-1 d-block mt-1" style="font-size: 0.68rem;">
+                                                            <i class="bi bi-x-circle"></i> Expired
+                                                        </span>
+                                                    }
+                                                    else if (b.ExpiryStatus == "Expiring Soon")
+                                                    {
+                                                        <span class="badge bg-warning-subtle text-warning border border-warning-subtle py-0 px-1 d-block mt-1" style="font-size: 0.68rem;">
+                                                            <i class="bi bi-clock"></i> Expiring (@b.DaysUntilExpiry d)
+                                                        </span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="badge bg-success-subtle text-success border border-success-subtle py-0 px-1 d-block mt-1" style="font-size: 0.68rem;">
+                                                            <i class="bi bi-check2"></i> Good
+                                                        </span>
+                                                    }
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted small">No Expiry</span>
+                                                }
+                                            </td>
+
+                                            <!-- Unit Cost -->
+                                            <td class="text-end small text-muted font-monospace">
+                                                $@b.UnitCost.ToString("F2")
+                                            </td>
+
+                                            <!-- Available Quantity -->
+                                            <td class="text-center">
+                                                <span class="badge bg-light text-dark border fs-6 px-2 py-1">
+                                                    @b.TotalQuantity @Model.Product.UnitOfMeasure
+                                                </span>
+                                            </td>
+
+                                            <!-- Actions -->
+                                            <td class="pe-3 text-end">
+                                                <div class="btn-group btn-group-sm">
+                                                    <a asp-controller="ProductBatches" asp-action="Edit" asp-route-id="@b.BatchId" class="btn btn-outline-primary btn-sm py-0 px-2" title="Edit Batch">
+                                                        <i class="bi bi-pencil"></i>
+                                                    </a>
+                                                    <a asp-controller="ProductBatches" asp-action="Delete" asp-route-id="@b.BatchId" class="btn btn-outline-danger btn-sm py-0 px-2" title="Delete Batch">
+                                                        <i class="bi bi-trash"></i>
+                                                    </a>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+

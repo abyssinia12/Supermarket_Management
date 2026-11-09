@@ -1,0 +1,358 @@
+@model SuperMarket.Models.ViewModels.ProductIndexFilterViewModel
+
+@{
+    ViewData["Title"] = "Products Management";
+}
+
+<div class="container-fluid px-4 my-4">
+    <!-- Breadcrumb & Top Bar -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+        <div>
+            <h3 class="mb-0 text-dark fw-normal">
+                <i class="bi bi-box-seam text-primary me-2"></i> Product Management
+            </h3>
+            <div class="text-muted small">Register, monitor stock levels, and track product batches and categories.</div>
+        </div>
+        <div class="d-flex gap-2">
+            <a asp-controller="Categories" asp-action="Index" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-tags me-1"></i> Manage Categories
+            </a>
+            <a asp-controller="ProductBatches" asp-action="Index" class="btn btn-outline-info btn-sm">
+                <i class="bi bi-boxes me-1"></i> Batch Management
+            </a>
+            <a asp-action="Create" class="btn btn-primary btn-sm">
+                <i class="bi bi-plus-lg me-1"></i> Add New Product
+            </a>
+        </div>
+    </div>
+
+    <!-- Flash Messages -->
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show shadow-sm" role="alert">
+            <i class="bi bi-check-circle-fill me-2"></i> @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i> @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <!-- KPI Metric Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-xl-3 col-sm-6">
+            <div class="card border-0 shadow-sm rounded-3 bg-white p-3 h-100 border-start border-primary border-4">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="text-muted small text-uppercase fw-bold">Total Products</div>
+                        <div class="fs-4 fw-bold text-dark mt-1">@Model.TotalProducts</div>
+                    </div>
+                    <div class="avatar-stat bg-primary-subtle text-primary">
+                        <i class="bi bi-box"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-sm-6">
+            <div class="card border-0 shadow-sm rounded-3 bg-white p-3 h-100 border-start border-success border-4">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="text-muted small text-uppercase fw-bold">In Stock</div>
+                        <div class="fs-4 fw-bold text-success mt-1">@Model.InStockCount</div>
+                    </div>
+                    <div class="avatar-stat bg-success-subtle text-success">
+                        <i class="bi bi-check-circle"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-sm-6">
+            <div class="card border-0 shadow-sm rounded-3 bg-white p-3 h-100 border-start border-warning border-4">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="text-muted small text-uppercase fw-bold">Low Stock Alert</div>
+                        <div class="fs-4 fw-bold text-warning mt-1">@Model.LowStockCount</div>
+                    </div>
+                    <div class="avatar-stat bg-warning-subtle text-warning">
+                        <i class="bi bi-exclamation-triangle"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-sm-6">
+            <div class="card border-0 shadow-sm rounded-3 bg-white p-3 h-100 border-start border-danger border-4">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="text-muted small text-uppercase fw-bold">Out of Stock</div>
+                        <div class="fs-4 fw-bold text-danger mt-1">@Model.OutOfStockCount</div>
+                    </div>
+                    <div class="avatar-stat bg-danger-subtle text-danger">
+                        <i class="bi bi-x-octagon"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Table Card -->
+    <div class="card border-1 shadow-sm rounded-2">
+        <!-- Filter Bar -->
+        <div class="card-header bg-white py-3 border-bottom">
+            <form method="get" asp-action="Index" class="row g-2 align-items-center">
+                <!-- Search -->
+                <div class="col-lg-4 col-md-5">
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text bg-white"><i class="bi bi-search text-muted"></i></span>
+                        <input type="text" name="search" value="@Model.SearchTerm" class="form-control" placeholder="Search by SKU, Barcode, Name..." />
+                    </div>
+                </div>
+
+                <!-- Category Dropdown -->
+                <div class="col-lg-3 col-md-4">
+                    <div class="input-group input-group-sm">
+                        <label class="input-group-text bg-white text-muted">Category</label>
+                        <select name="categoryId" class="form-select" onchange="this.form.submit()">
+                            <option value="">All Categories</option>
+                            @foreach (var c in Model.Categories)
+                            {
+                                <option value="@c.Value" selected="@(c.Selected ? "selected" : null)">@c.Text</option>
+                            }
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Stock Filter Dropdown -->
+                <div class="col-lg-3 col-md-3">
+                    <div class="input-group input-group-sm">
+                        <label class="input-group-text bg-white text-muted">Stock Status</label>
+                        <select name="stockFilter" class="form-select" onchange="this.form.submit()">
+                            <option value="all" selected="@(Model.StockFilter == "all" ? "selected" : null)">All Stock Levels</option>
+                            <option value="instock" selected="@(Model.StockFilter == "instock" ? "selected" : null)">In Stock</option>
+                            <option value="lowstock" selected="@(Model.StockFilter == "lowstock" ? "selected" : null)">Low Stock (&le; Min)</option>
+                            <option value="outofstock" selected="@(Model.StockFilter == "outofstock" ? "selected" : null)">Out of Stock</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Filter Actions -->
+                <div class="col-lg-2 col-md-12 text-md-end d-flex gap-2 justify-content-end">
+                    <button type="submit" class="btn btn-sm btn-outline-secondary">
+                        <i class="bi bi-funnel"></i> Filter
+                    </button>
+                    @if (!string.IsNullOrEmpty(Model.SearchTerm) || Model.SelectedCategoryId.HasValue || (Model.StockFilter != "all" && !string.IsNullOrEmpty(Model.StockFilter)))
+                    {
+                        <a asp-action="Index" class="btn btn-sm btn-outline-danger" title="Clear Filters">
+                            <i class="bi bi-x-circle"></i>
+                        </a>
+                    }
+                </div>
+            </form>
+        </div>
+
+        <!-- Table Area -->
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="bg-light">
+                    <tr class="text-secondary small fw-bold">
+                        <th class="ps-3 py-3" style="width: 140px;">Product Code (SKU)</th>
+                        <th class="py-3" style="min-width: 200px;">Product Name & Description</th>
+                        <th class="py-3" style="width: 140px;">Category</th>
+                        <th class="py-3 text-end" style="width: 100px;">Cost</th>
+                        <th class="py-3 text-end" style="width: 100px;">Price</th>
+                        <th class="py-3 text-center" style="width: 130px;">Stock Level</th>
+                        <th class="py-3 text-center" style="width: 120px;">Batches</th>
+                        <th class="py-3 text-center" style="width: 90px;">Status</th>
+                        <th class="pe-3 py-3 text-end" style="width: 140px;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.Products.Any())
+                    {
+                        <tr>
+                            <td colspan="9" class="text-center py-5 text-muted">
+                                <i class="bi bi-inbox fs-2 d-block mb-2 text-secondary"></i>
+                                No products found matching the criteria.
+                                <div class="mt-2">
+                                    <a asp-action="Create" class="btn btn-sm btn-primary">Register New Product</a>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
+                        @foreach (var item in Model.Products)
+                        {
+                            <tr>
+                                <!-- SKU / Product Code -->
+                                <td class="ps-3">
+                                    <span class="badge bg-light text-dark border font-monospace py-1 px-2">@item.Sku</span>
+                                    <div class="text-muted" style="font-size: 0.72rem;">
+                                        <i class="bi bi-upc-scan me-1"></i>@item.Barcode
+                                    </div>
+                                </td>
+
+                                <!-- Product Name & Description -->
+                                <td>
+                                    <a asp-action="Details" asp-route-id="@item.ProductId" class="fw-semibold text-dark text-decoration-none hover-primary">
+                                        @item.ProductName
+                                    </a>
+                                    @if (!string.IsNullOrEmpty(item.Description))
+                                    {
+                                        <div class="text-muted text-truncate" style="max-width: 320px; font-size: 0.8rem;">
+                                            @item.Description
+                                        </div>
+                                    }
+                                </td>
+
+                                <!-- Category -->
+                                <td>
+                                    <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">
+                                        @item.CategoryName
+                                    </span>
+                                </td>
+
+                                <!-- Cost -->
+                                <td class="text-end text-muted font-monospace small">
+                                    $@item.PurchaseCost.ToString("F2")
+                                </td>
+
+                                <!-- Selling Price -->
+                                <td class="text-end fw-semibold text-dark font-monospace">
+                                    $@item.SellingPrice.ToString("F2")
+                                </td>
+
+                                <!-- Stock Level & Progress Indicator -->
+                                <td class="text-center">
+                                    <div class="d-inline-block text-center">
+                                        <div class="fw-bold @(item.TotalStock <= 0 ? "text-danger" : (item.TotalStock <= item.MinStockLevel ? "text-warning" : "text-success"))">
+                                            @item.TotalStock <span class="text-muted small fw-normal">@item.UnitOfMeasure</span>
+                                        </div>
+                                        <div class="progress" style="height: 4px; width: 80px; margin: 2px auto 0;">
+                                            @{
+                                                var pct = item.MinStockLevel > 0 ? Math.Min(100, (int)((item.TotalStock / (item.MinStockLevel * 2)) * 100)) : 100;
+                                                var barColor = item.TotalStock <= 0 ? "bg-danger" : (item.TotalStock <= item.MinStockLevel ? "bg-warning" : "bg-success");
+                                            }
+                                            <div class="progress-bar @barColor" role="progressbar" style="width: @pct%"></div>
+                                        </div>
+                                        <div class="text-muted" style="font-size: 0.7rem;">Min: @item.MinStockLevel</div>
+                                    </div>
+                                </td>
+
+                                <!-- Batch Availability -->
+                                <td class="text-center">
+                                    <a asp-controller="ProductBatches" asp-action="Index" asp-route-productId="@item.ProductId" class="text-decoration-none">
+                                        <span class="badge bg-light text-dark border px-2 py-1" title="View Batches">
+                                            <i class="bi bi-boxes text-primary me-1"></i> @item.ActiveBatchCount Batch@(item.ActiveBatchCount == 1 ? "" : "es")
+                                        </span>
+                                    </a>
+                                    @if (item.HasExpiredBatches)
+                                    {
+                                        <div class="badge bg-danger-subtle text-danger border border-danger-subtle py-0 px-1 mt-1" style="font-size: 0.68rem;" title="Has expired batches!">
+                                            <i class="bi bi-clock-history"></i> Expired
+                                        </div>
+                                    }
+                                    else if (item.HasExpiringBatches)
+                                    {
+                                        <div class="badge bg-warning-subtle text-warning border border-warning-subtle py-0 px-1 mt-1" style="font-size: 0.68rem;" title="Has batches expiring in < 30 days">
+                                            <i class="bi bi-hourglass-split"></i> Expiring Soon
+                                        </div>
+                                    }
+                                </td>
+
+                                <!-- Status -->
+                                <td class="text-center">
+                                    @if (item.TotalStock <= 0)
+                                    {
+                                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1">
+                                            Out of Stock
+                                        </span>
+                                    }
+                                    else if (item.TotalStock <= item.MinStockLevel)
+                                    {
+                                        <span class="badge bg-warning-subtle text-warning border border-warning-subtle px-2 py-1">
+                                            Low Stock
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">
+                                            In Stock
+                                        </span>
+                                    }
+                                </td>
+
+                                <!-- Actions Dropdown -->
+                                <td class="pe-3 text-end">
+                                    <div class="btn-group btn-group-sm">
+                                        <a asp-action="Details" asp-route-id="@item.ProductId" class="btn btn-outline-secondary" title="Details">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        <a asp-action="Edit" asp-route-id="@item.ProductId" class="btn btn-outline-primary" title="Edit Product">
+                                            <i class="bi bi-pencil-square"></i>
+                                        </a>
+                                        <div class="btn-group btn-group-sm">
+                                            <button type="button" class="btn btn-outline-secondary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
+                                                <span class="visually-hidden">Toggle Dropdown</span>
+                                            </button>
+                                            <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                                                <li>
+                                                    <a class="dropdown-item py-2" asp-controller="ProductBatches" asp-action="Create" asp-route-productId="@item.ProductId">
+                                                        <i class="bi bi-plus-circle text-success me-2"></i> Add New Batch
+                                                    </a>
+                                                </li>
+                                                <li>
+                                                    <a class="dropdown-item py-2" asp-controller="ProductBatches" asp-action="Index" asp-route-productId="@item.ProductId">
+                                                        <i class="bi bi-boxes text-info me-2"></i> View Batches
+                                                    </a>
+                                                </li>
+                                                <li><hr class="dropdown-divider"></li>
+                                                <li>
+                                                    <a class="dropdown-item py-2 text-danger" asp-action="Delete" asp-route-id="@item.ProductId">
+                                                        <i class="bi bi-trash text-danger me-2"></i> Delete Product
+                                                    </a>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Footer Summary -->
+        <div class="card-footer bg-white border-top py-2 px-3 d-flex flex-wrap justify-content-between align-items-center text-muted small">
+            <div>
+                Showing <strong>@Model.Products.Count</strong> of <strong>@Model.TotalProducts</strong> products
+            </div>
+            <div>
+                Total Estimated Inventory Valuation: <strong class="text-dark">$@Model.TotalInventoryValue.ToString("N2")</strong>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .avatar-stat {
+        width: 44px;
+        height: 44px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.3rem;
+    }
+    .hover-primary:hover {
+        color: #0d6efd !important;
+    }
+</style>
+

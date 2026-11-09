@@ -1,0 +1,148 @@
+@model SuperMarket.Models.ViewModels.MenuFormViewModel
+
+@{
+    ViewData["Title"] = "Create Menu Item";
+}
+
+<div class="container my-4" style="max-width: 800px;">
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-action="Index">Menu</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Create Menu Item</li>
+        </ol>
+    </nav>
+
+    <div class="card shadow-sm border-1">
+        <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+            <h5 class="mb-0 text-dark">
+                <i class="bi bi-plus-circle text-primary me-2"></i> Create Menu Item
+            </h5>
+            <a asp-action="Index" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i> Back to List
+            </a>
+        </div>
+        <div class="card-body p-4">
+            <form asp-action="Create" method="post">
+                @Html.AntiForgeryToken()
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+                <div class="row g-3">
+                    <!-- Title -->
+                    <div class="col-md-12">
+                        <label asp-for="Title" class="form-label fw-semibold"></label>
+                        <input asp-for="Title" class="form-control" placeholder="e.g. Products List, Approval Types, New Sale" />
+                        <span asp-validation-for="Title" class="text-danger small"></span>
+                        <div class="form-text">User-friendly title displayed in menus, breadcrumbs, and tables.</div>
+                    </div>
+
+                    <!-- Controller -->
+                    <div class="col-md-6">
+                        <label asp-for="Controller" class="form-label fw-semibold"></label>
+                        <input asp-for="Controller" class="form-control" list="controllerOptions" placeholder="e.g. ApprovalTypes, Products, Roles" />
+                        <datalist id="controllerOptions">
+                            @foreach (var c in Model.AvailableControllers)
+                            {
+                                <option value="@c" />
+                            }
+                        </datalist>
+                        <span asp-validation-for="Controller" class="text-danger small"></span>
+                    </div>
+
+                    <!-- Action -->
+                    <div class="col-md-6">
+                        <label asp-for="Action" class="form-label fw-semibold"></label>
+                        <input asp-for="Action" class="form-control" list="actionOptions" placeholder="e.g. Index, Create, Edit, Delete" />
+                        <datalist id="actionOptions">
+                            @foreach (var a in Model.AvailableActions)
+                            {
+                                <option value="@a" />
+                            }
+                        </datalist>
+                        <span asp-validation-for="Action" class="text-danger small"></span>
+                    </div>
+
+                    <!-- Menu Category -->
+                    <div class="col-md-6">
+                        <label asp-for="MenuCategory" class="form-label fw-semibold"></label>
+                        <input asp-for="MenuCategory" class="form-control" list="categoryOptions" placeholder="e.g. Approval Settings, Inventory, Security & Roles" />
+                        <datalist id="categoryOptions">
+                            @foreach (var cat in Model.AvailableCategories)
+                            {
+                                <option value="@cat" />
+                            }
+                        </datalist>
+                        <span asp-validation-for="MenuCategory" class="text-danger small"></span>
+                    </div>
+
+                    <!-- Sort Order -->
+                    <div class="col-md-6">
+                        <label asp-for="SortOrder" class="form-label fw-semibold"></label>
+                        <input asp-for="SortOrder" type="number" class="form-control" />
+                        <span asp-validation-for="SortOrder" class="text-danger small"></span>
+                    </div>
+
+                    <!-- Icon (Optional) -->
+                    <div class="col-md-6">
+                        <label asp-for="Icon" class="form-label fw-semibold"></label>
+                        <input asp-for="Icon" class="form-control" placeholder="e.g. bi bi-box-seam, bi bi-people" />
+                        <span asp-validation-for="Icon" class="text-danger small"></span>
+                    </div>
+
+                    <!-- Description -->
+                    <div class="col-md-6">
+                        <label asp-for="Description" class="form-label fw-semibold"></label>
+                        <input asp-for="Description" class="form-control" placeholder="Optional description or tooltip" />
+                        <span asp-validation-for="Description" class="text-danger small"></span>
+                    </div>
+
+                    <!-- Flags & Checkboxes matching image concept -->
+                    <div class="col-12 mt-4 pt-3 border-top">
+                        <h6 class="fw-semibold text-secondary mb-3">Item Visibility & Audit Options</h6>
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <div class="form-check form-switch p-2 bg-light rounded border">
+                                    <input class="form-check-input ms-0 me-2" type="checkbox" asp-for="IsMenu" id="checkIsMenu" />
+                                    <label class="form-check-label fw-semibold" for="checkIsMenu">
+                                        IsMenu
+                                    </label>
+                                    <div class="small text-muted ps-4">Show directly on navigation menus and sidebar.</div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-check form-switch p-2 bg-light rounded border">
+                                    <input class="form-check-input ms-0 me-2" type="checkbox" asp-for="IsTraceable" id="checkIsTraceable" />
+                                    <label class="form-check-label fw-semibold" for="checkIsTraceable">
+                                        IsTraceable
+                                    </label>
+                                    <div class="small text-muted ps-4">Log user activity for this route in AuditLog.</div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-check form-switch p-2 bg-light rounded border">
+                                    <input class="form-check-input ms-0 me-2" type="checkbox" asp-for="IsActive" id="checkIsActive" />
+                                    <label class="form-check-label fw-semibold" for="checkIsActive">
+                                        IsActive
+                                    </label>
+                                    <div class="small text-muted ps-4">Item is active and accessible in the system.</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="col-12 mt-4 pt-3 border-top d-flex justify-content-end gap-2">
+                        <a asp-action="Index" class="btn btn-outline-secondary px-4">Cancel</a>
+                        <button type="submit" class="btn btn-primary px-4">
+                            <i class="bi bi-check-lg me-1"></i> Save Menu Item
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}
+

@@ -1,0 +1,460 @@
+@model SuperMarket.Models.ViewModels.MenuIndexViewModel
+
+@{
+    ViewData["Title"] = "Index | Menu";
+}
+
+@Html.AntiForgeryToken()
+
+<div class="menu-management-wrapper my-4">
+    <!-- Flash Messages -->
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show shadow-sm mb-3" role="alert">
+            <i class="bi bi-check-circle-fill me-2"></i> @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+    @if (TempData["InfoMessage"] != null)
+    {
+        <div class="alert alert-info alert-dismissible fade show shadow-sm mb-3" role="alert">
+            <i class="bi bi-info-circle-fill me-2"></i> @TempData["InfoMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <!-- Main Card Panel -->
+    <div class="card border-1 shadow-sm rounded-1 menu-card">
+        <!-- Card Header mimicking the exact image reference -->
+        <div class="card-header bg-white border-bottom py-2 px-3 d-flex justify-content-between align-items-center">
+            <div class="header-title">
+                <span class="fs-5 text-dark fw-normal">Index</span>
+                <span class="text-secondary mx-1">|</span>
+                <span class="fs-5 text-dark fw-normal">Menu</span>
+            </div>
+            <div class="header-window-actions d-flex align-items-center gap-2">
+                <button type="button" class="btn btn-sm btn-link text-muted p-1 text-decoration-none" id="btnCollapseCard" title="Collapse / Expand" data-bs-toggle="collapse" data-bs-target="#menuCardBody">
+                    <i class="bi bi-chevron-down"></i>
+                </button>
+                <a asp-action="Index" class="btn btn-sm btn-link text-muted p-1 text-decoration-none" title="Refresh">
+                    <i class="bi bi-arrow-clockwise"></i>
+                </a>
+                <a asp-action="Index" class="btn btn-sm btn-link text-muted p-1 text-decoration-none" title="Reset Filters">
+                    <i class="bi bi-x-lg"></i>
+                </a>
+            </div>
+        </div>
+
+        <div id="menuCardBody" class="collapse show">
+            <!-- Filter & Action Toolbar -->
+            <div class="p-3 bg-light border-bottom">
+                <form method="get" asp-action="Index" class="row g-2 align-items-center">
+                    <div class="col-md-3 col-sm-6">
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text bg-white"><i class="bi bi-search text-muted"></i></span>
+                            <input type="text" name="search" value="@Model.SearchString" class="form-control" placeholder="Search Title, Controller, Action..." />
+                        </div>
+                    </div>
+
+                    <div class="col-md-3 col-sm-6">
+                        <div class="input-group input-group-sm">
+                            <label class="input-group-text bg-white text-muted">Category</label>
+                            <select name="category" class="form-select" onchange="this.form.submit()">
+                                <option value="All">All Categories</option>
+                                @foreach (var cat in Model.Categories)
+                                {
+                                    <option value="@cat" selected="@(Model.SelectedCategory == cat ? "selected" : null)">@cat</option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="col-md-2 col-sm-6">
+                        <div class="form-check form-switch pt-1">
+                            <input class="form-check-input" type="checkbox" id="isMenuOnlySwitch" name="isMenuOnly" value="true" @(Model.IsMenuOnly == true ? "checked" : "") onchange="this.form.submit()" />
+                            <label class="form-check-label text-secondary small" for="isMenuOnlySwitch">IsMenu Only</label>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4 col-sm-6 text-md-end d-flex justify-content-md-end gap-2">
+                        <button type="submit" class="btn btn-sm btn-outline-secondary">
+                            <i class="bi bi-funnel"></i> Filter
+                        </button>
+                        @if (!string.IsNullOrEmpty(Model.SearchString) || !string.IsNullOrEmpty(Model.SelectedCategory) || Model.IsMenuOnly == true)
+                        {
+                            <a asp-action="Index" class="btn btn-sm btn-outline-danger" title="Clear Filters">
+                                <i class="bi bi-x-circle"></i> Clear
+                            </a>
+                        }
+                        <a asp-action="Create" class="btn btn-sm btn-primary">
+                            <i class="bi bi-plus-lg me-1"></i> Add Menu Item
+                        </a>
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-outline-dark dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                <i class="bi bi-gear"></i> Actions
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                                <li>
+                                    <form asp-action="SyncControllers" method="post" class="d-inline">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="dropdown-item" onclick="return confirm('Scan and sync all ASP.NET controllers into the Menu list?');">
+                                            <i class="bi bi-lightning-charge text-warning me-2"></i> Sync Controllers
+                                        </button>
+                                    </form>
+                                </li>
+                                <li>
+                                    <form asp-action="ResetSeed" method="post" class="d-inline">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="dropdown-item text-danger" onclick="return confirm('Reset menu configuration back to reference image seed data?');">
+                                            <i class="bi bi-arrow-counterclockwise me-2"></i> Reset to Default Seed
+                                        </button>
+                                    </form>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Table Responsive Area -->
+            <div class="table-responsive">
+                <table class="table menu-table mb-0 align-middle">
+                    <thead>
+                        <tr class="text-secondary fw-semibold">
+                            <th class="ps-3" style="min-width: 200px;">Title</th>
+                            <th style="min-width: 140px;">Controller</th>
+                            <th style="min-width: 120px;">Action</th>
+                            <th class="text-center" style="width: 90px;">IsMenu</th>
+                            <th class="text-center" style="width: 100px;">IsTraceable</th>
+                            <th class="text-center" style="width: 90px;">IsActive</th>
+                            <th style="min-width: 160px;">
+                                <div class="d-flex align-items-center gap-1">
+                                    <span>Menu Category</span>
+                                    <i class="bi bi-caret-down-fill text-muted small" style="font-size: 0.75rem;"></i>
+                                </div>
+                            </th>
+                            <th class="text-end pe-3" style="width: 70px;">
+                                <i class="bi bi-caret-down-fill text-muted small" style="font-size: 0.75rem;"></i>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (!Model.Menus.Any())
+                        {
+                            <tr>
+                                <td colspan="8" class="text-center py-5 text-muted">
+                                    <i class="bi bi-inbox fs-2 d-block mb-2 text-secondary"></i>
+                                    No menu items found matching the selected filters.
+                                    <div class="mt-2">
+                                        <a asp-action="Index" class="btn btn-sm btn-outline-secondary me-2">View All</a>
+                                        <a asp-action="Create" class="btn btn-sm btn-primary">Create New Item</a>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                        else
+                        {
+                            @foreach (var item in Model.Menus)
+                            {
+                                <tr class="menu-row" data-id="@item.MenuId">
+                                    <!-- Title -->
+                                    <td class="ps-3 fw-normal text-dark">
+                                        @if (!string.IsNullOrEmpty(item.Icon))
+                                        {
+                                            <i class="@item.Icon me-1 text-muted"></i>
+                                        }
+                                        <span>@item.Title</span>
+                                    </td>
+
+                                    <!-- Controller -->
+                                    <td class="text-muted">
+                                        @item.Controller
+                                    </td>
+
+                                    <!-- Action -->
+                                    <td class="text-muted">
+                                        @item.Action
+                                    </td>
+
+                                    <!-- IsMenu Checkbox Column -->
+                                    <td class="text-center">
+                                        <button type="button"
+                                                class="btn-checkbox-indicator @(item.IsMenu ? "checked" : "unchecked")"
+                                                onclick="toggleMenuProperty(@item.MenuId, 'IsMenu', this)"
+                                                title="Click to toggle IsMenu">
+                                            @if (item.IsMenu)
+                                            {
+                                                <i class="bi bi-check check-icon"></i>
+                                            }
+                                        </button>
+                                    </td>
+
+                                    <!-- IsTraceable Checkbox Column -->
+                                    <td class="text-center">
+                                        <button type="button"
+                                                class="btn-checkbox-indicator @(item.IsTraceable ? "checked" : "unchecked")"
+                                                onclick="toggleMenuProperty(@item.MenuId, 'IsTraceable', this)"
+                                                title="Click to toggle IsTraceable">
+                                            @if (item.IsTraceable)
+                                            {
+                                                <i class="bi bi-check check-icon"></i>
+                                            }
+                                        </button>
+                                    </td>
+
+                                    <!-- IsActive Checkbox Column -->
+                                    <td class="text-center">
+                                        <button type="button"
+                                                class="btn-checkbox-indicator @(item.IsActive ? "checked" : "unchecked")"
+                                                onclick="toggleMenuProperty(@item.MenuId, 'IsActive', this)"
+                                                title="Click to toggle IsActive">
+                                            @if (item.IsActive)
+                                            {
+                                                <i class="bi bi-check check-icon"></i>
+                                            }
+                                        </button>
+                                    </td>
+
+                                    <!-- Menu Category -->
+                                    <td class="text-secondary">
+                                        @item.MenuCategory
+                                    </td>
+
+                                    <!-- Actions Dropdown (Mimicking hamburger with down arrow ☰ ▾) -->
+                                    <td class="text-end pe-3">
+                                        <div class="dropdown">
+                                            <button class="btn btn-sm btn-link text-dark p-1 text-decoration-none action-dropdown-btn"
+                                                    type="button"
+                                                    id="dropdownMenu-@item.MenuId"
+                                                    data-bs-toggle="dropdown"
+                                                    aria-expanded="false"
+                                                    title="Actions">
+                                                <span class="action-icon-group">
+                                                    <i class="bi bi-list fs-5 align-middle"></i>
+                                                    <i class="bi bi-caret-down-fill small-caret"></i>
+                                                </span>
+                                            </button>
+                                            <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" aria-labelledby="dropdownMenu-@item.MenuId">
+                                                <li>
+                                                    <a class="dropdown-item py-2" asp-action="Edit" asp-route-id="@item.MenuId">
+                                                        <i class="bi bi-pencil-square text-primary me-2"></i> Edit
+                                                    </a>
+                                                </li>
+                                                <li>
+                                                    <a class="dropdown-item py-2" asp-action="Details" asp-route-id="@item.MenuId">
+                                                        <i class="bi bi-info-circle text-info me-2"></i> Details
+                                                    </a>
+                                                </li>
+                                                <li><hr class="dropdown-divider"></li>
+                                                <li>
+                                                    <button type="button" class="dropdown-item py-2" onclick="toggleMenuProperty(@item.MenuId, 'IsMenu')">
+                                                        <i class="bi bi-layout-sidebar text-secondary me-2"></i> Toggle IsMenu
+                                                    </button>
+                                                </li>
+                                                <li>
+                                                    <button type="button" class="dropdown-item py-2" onclick="toggleMenuProperty(@item.MenuId, 'IsTraceable')">
+                                                        <i class="bi bi-fingerprint text-secondary me-2"></i> Toggle IsTraceable
+                                                    </button>
+                                                </li>
+                                                <li>
+                                                    <button type="button" class="dropdown-item py-2" onclick="toggleMenuProperty(@item.MenuId, 'IsActive')">
+                                                        <i class="bi bi-power text-secondary me-2"></i> Toggle IsActive
+                                                    </button>
+                                                </li>
+                                                <li><hr class="dropdown-divider"></li>
+                                                <li>
+                                                    <a class="dropdown-item py-2 text-danger" asp-action="Delete" asp-route-id="@item.MenuId">
+                                                        <i class="bi bi-trash text-danger me-2"></i> Delete
+                                                    </a>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Footer summary status bar -->
+            <div class="card-footer bg-white border-top py-2 px-3 d-flex flex-wrap justify-content-between align-items-center text-muted small">
+                <div>
+                    Showing <strong>@Model.Menus.Count</strong> of <strong>@Model.TotalItems</strong> items
+                    @if (!string.IsNullOrEmpty(Model.SelectedCategory) && Model.SelectedCategory != "All")
+                    {
+                        <span class="badge bg-secondary ms-1">Category: @Model.SelectedCategory</span>
+                    }
+                </div>
+                <div class="d-flex gap-3">
+                    <span><i class="bi bi-menu-button-wide text-primary"></i> Menus: <strong>@Model.MenuCount</strong></span>
+                    <span><i class="bi bi-check-circle text-success"></i> Active: <strong>@Model.ActiveCount</strong></span>
+                    <span><i class="bi bi-shield-check text-info"></i> Traceable: <strong>@Model.TraceableCount</strong></span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Mimicking the crisp clean style of the reference image */
+    .menu-card {
+        border-color: #e5e7eb;
+        background-color: #ffffff;
+    }
+
+    .card-header .header-title span {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        letter-spacing: -0.2px;
+    }
+
+    .menu-table {
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+    .menu-table thead th {
+        background-color: #ffffff;
+        border-bottom: 1px solid #e9ecef;
+        padding-top: 14px;
+        padding-bottom: 14px;
+        font-size: 0.92rem;
+        font-weight: 600;
+        color: #212529;
+    }
+
+    .menu-table tbody tr {
+        border-bottom: 1px solid #f1f3f5;
+        transition: background-color 0.15s ease-in-out;
+    }
+
+    .menu-table tbody tr:hover {
+        background-color: #fafbfc;
+    }
+
+    .menu-table td {
+        padding-top: 14px;
+        padding-bottom: 14px;
+        font-size: 0.93rem;
+        border-bottom: 1px solid #f1f3f5;
+    }
+
+    /* Checkbox Indicator styling matching reference image */
+    .btn-checkbox-indicator {
+        width: 17px;
+        height: 17px;
+        border-radius: 2px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+        cursor: pointer;
+        transition: all 0.15s ease-in-out;
+        vertical-align: middle;
+        background: transparent;
+    }
+
+    /* Checked style: gray filled square with neat checkmark matching reference image */
+    .btn-checkbox-indicator.checked {
+        background-color: #cbd5e1;
+        border: 1px solid #94a3b8;
+    }
+
+    .btn-checkbox-indicator.checked .check-icon {
+        color: #334155;
+        font-size: 13px;
+        font-weight: bold;
+        line-height: 1;
+    }
+
+    /* Unchecked style: clean square border matching reference image */
+    .btn-checkbox-indicator.unchecked {
+        background-color: #ffffff;
+        border: 1.5px solid #d1d5db;
+    }
+
+    .btn-checkbox-indicator.unchecked:hover {
+        border-color: #94a3b8;
+        background-color: #f8fafc;
+    }
+
+    /* Action Dropdown button (≡ ▾) */
+    .action-dropdown-btn {
+        color: #374151 !important;
+        display: inline-flex;
+        align-items: center;
+        line-height: 1;
+    }
+
+    .action-icon-group {
+        display: inline-flex;
+        align-items: center;
+        gap: 1px;
+    }
+
+    .action-icon-group .small-caret {
+        font-size: 0.6rem;
+        margin-top: 2px;
+    }
+
+    .action-dropdown-btn:hover {
+        color: #0d6efd !important;
+    }
+
+    .dropdown-menu {
+        font-size: 0.9rem;
+    }
+</style>
+
+@section Scripts {
+    <script>
+        function getAntiForgeryToken() {
+            var tokenInput = document.querySelector('input[name="__RequestVerificationToken"]');
+            return tokenInput ? tokenInput.value : '';
+        }
+
+        function toggleMenuProperty(id, property, buttonElem) {
+            var formData = new FormData();
+            formData.append('id', id);
+            formData.append('property', property);
+            formData.append('__RequestVerificationToken', getAntiForgeryToken());
+
+            fetch('@Url.Action("ToggleProperty", "Menu")', {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                },
+                body: formData
+            })
+            .then(function (response) {
+                if (response.ok) {
+                    return response.json();
+                }
+                throw new Error('Network error');
+            })
+            .then(function (data) {
+                if (data.success) {
+                    if (buttonElem) {
+                        if (data.newValue === true) {
+                            buttonElem.classList.remove('unchecked');
+                            buttonElem.classList.add('checked');
+                            buttonElem.innerHTML = '<i class="bi bi-check check-icon"></i>';
+                        } else {
+                            buttonElem.classList.remove('checked');
+                            buttonElem.classList.add('unchecked');
+                            buttonElem.innerHTML = '';
+                        }
+                    } else {
+                        window.location.reload();
+                    }
+                }
+            })
+            .catch(function () {
+                // If AJAX fails, fallback to reload
+                window.location.reload();
+            });
+        }
+    </script>
+}
+

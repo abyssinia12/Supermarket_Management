@@ -1,0 +1,171 @@
+@model SuperMarket.Models.ViewModels.CustomerReturnFormViewModel
+@{
+    ViewData["Title"] = "Record Customer Return";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="mb-0"><i class="bi bi-arrow-return-left text-danger me-2"></i>Record Customer Return</h2>
+    <a asp-action="Index" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left me-1"></i>Back</a>
+</div>
+
+<form asp-action="Create" method="post" id="returnForm">
+    <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+    <div class="card border-0 shadow-sm mb-3">
+        <div class="card-header bg-white border-bottom py-3">
+            <h6 class="mb-0 fw-semibold"><i class="bi bi-info-circle me-2"></i>Return Details</h6>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label asp-for="ReturnDate" class="form-label fw-semibold">Return Date</label>
+                    <input asp-for="ReturnDate" class="form-control" type="date" />
+                    <span asp-validation-for="ReturnDate" class="text-danger small"></span>
+                </div>
+                <div class="col-md-4">
+                    <label asp-for="SaleId" class="form-label fw-semibold">Sale Reference <span class="text-muted">(optional)</span></label>
+                    <input asp-for="SaleId" class="form-control" type="number" placeholder="e.g. 1001" />
+                </div>
+                <div class="col-md-4">
+                    <label asp-for="RefundAmount" class="form-label fw-semibold">Refund Amount ($)</label>
+                    <input asp-for="RefundAmount" class="form-control" type="number" step="0.01" min="0" placeholder="0.00" />
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="LocationId" class="form-label fw-semibold">Return to Location</label>
+                    <select asp-for="LocationId" asp-items="Model.AvailableLocations" class="form-select">
+                        <option value="">— Select Location —</option>
+                    </select>
+                    <span asp-validation-for="LocationId" class="text-danger small"></span>
+                    <div class="form-text">Resalable items will be restocked here.</div>
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="Reason" class="form-label fw-semibold">Reason for Return</label>
+                    <textarea asp-for="Reason" class="form-control" rows="2" placeholder="Describe why the customer returned this..."></textarea>
+                    <span asp-validation-for="Reason" class="text-danger small"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-3">
+        <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between">
+            <h6 class="mb-0 fw-semibold"><i class="bi bi-box-seam me-2"></i>Returned Items</h6>
+            <button type="button" class="btn btn-outline-danger btn-sm" id="addReturnRowBtn">
+                <i class="bi bi-plus-circle me-1"></i>Add Item
+            </button>
+        </div>
+        <div class="card-body">
+            <div class="alert alert-info small">
+                <i class="bi bi-info-circle me-2"></i>
+                Only items marked as <strong>Resalable</strong> will be added back to inventory stock.
+            </div>
+            <div id="returnItemsContainer">
+                @for (int i = 0; i < Model.Items.Count; i++)
+                {
+                    <div class="row g-2 align-items-end mb-2 return-item-row">
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold">Product</label>
+                            <select name="Items[@i].ProductId" class="form-select return-product-select" data-index="@i">
+                                <option value="">— Select Product —</option>
+                                @foreach (var p in Model.AvailableProducts)
+                                {
+                                    <option value="@p.Value">@p.Text</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label small fw-semibold">Batch</label>
+                            <select name="Items[@i].BatchId" class="form-select return-batch-select">
+                                <option value="">— Select Product first —</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label small fw-semibold">Qty</label>
+                            <input name="Items[@i].Quantity" type="number" step="0.001" min="0.001" class="form-control" placeholder="0" />
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label small fw-semibold">Condition</label>
+                            <select name="Items[@i].RestockCondition" class="form-select">
+                                <option value="Resalable">Resalable</option>
+                                <option value="Damaged">Damaged</option>
+                                <option value="Expired">Expired</option>
+                                <option value="Quarantine">Quarantine</option>
+                            </select>
+                        </div>
+                        <div class="col-md-1">
+                            <button type="button" class="btn btn-outline-danger btn-sm remove-return-row-btn w-100">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-danger"><i class="bi bi-check-circle me-1"></i>Record Return</button>
+        <a asp-action="Index" class="btn btn-outline-secondary">Cancel</a>
+    </div>
+</form>
+
+@section Scripts {
+    @{ await Html.RenderPartialAsync("_ValidationScriptsPartial"); }
+    <script>
+        var returnProducts = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.AvailableProducts.Select(p => new { value = p.Value, text = p.Text })));
+        var returnRowIndex = @Model.Items.Count;
+
+        function loadReturnBatches(productSelect, batchSelect) {
+            var productId = productSelect.value;
+            batchSelect.innerHTML = '<option value="">Loading...</option>';
+            if (!productId) { batchSelect.innerHTML = '<option value="">— Select Product first —</option>'; return; }
+            fetch('/CustomerReturns/GetBatchesForProduct?productId=' + productId)
+                .then(r => r.json())
+                .then(data => {
+                    batchSelect.innerHTML = '<option value="">— Select Batch —</option>';
+                    data.forEach(b => {
+                        var opt = document.createElement('option');
+                        opt.value = b.value; opt.textContent = b.text;
+                        batchSelect.appendChild(opt);
+                    });
+                }).catch(() => { batchSelect.innerHTML = '<option value="">Error</option>'; });
+        }
+
+        document.getElementById('addReturnRowBtn').addEventListener('click', function () {
+            var condOptions = ['Resalable','Damaged','Expired','Quarantine'].map(c => '<option value="' + c + '">' + c + '</option>').join('');
+            var html = '<div class="row g-2 align-items-end mb-2 return-item-row">' +
+                '<div class="col-md-4"><label class="form-label small fw-semibold">Product</label>' +
+                '<select name="Items[' + returnRowIndex + '].ProductId" class="form-select return-product-select"><option value="">— Select Product —</option>' +
+                returnProducts.map(p => '<option value="' + p.value + '">' + p.text + '</option>').join('') + '</select></div>' +
+                '<div class="col-md-3"><label class="form-label small fw-semibold">Batch</label>' +
+                '<select name="Items[' + returnRowIndex + '].BatchId" class="form-select return-batch-select"><option value="">— Select Product first —</option></select></div>' +
+                '<div class="col-md-2"><label class="form-label small fw-semibold">Qty</label>' +
+                '<input name="Items[' + returnRowIndex + '].Quantity" type="number" step="0.001" min="0.001" class="form-control" placeholder="0" /></div>' +
+                '<div class="col-md-2"><label class="form-label small fw-semibold">Condition</label>' +
+                '<select name="Items[' + returnRowIndex + '].RestockCondition" class="form-select">' + condOptions + '</select></div>' +
+                '<div class="col-md-1"><button type="button" class="btn btn-outline-danger btn-sm remove-return-row-btn w-100"><i class="bi bi-trash"></i></button></div></div>';
+            document.getElementById('returnItemsContainer').insertAdjacentHTML('beforeend', html);
+            returnRowIndex++;
+            attachReturnListeners();
+        });
+
+        function attachReturnListeners() {
+            document.querySelectorAll('.return-product-select').forEach(function (sel) {
+                if (!sel.dataset.listenerAttached) {
+                    sel.addEventListener('change', function () {
+                        var row = this.closest('.return-item-row');
+                        loadReturnBatches(this, row.querySelector('.return-batch-select'));
+                    });
+                    sel.dataset.listenerAttached = 'true';
+                }
+            });
+            document.querySelectorAll('.remove-return-row-btn').forEach(function (btn) {
+                if (!btn.dataset.listenerAttached) {
+                    btn.addEventListener('click', function () { this.closest('.return-item-row').remove(); });
+                    btn.dataset.listenerAttached = 'true';
+                }
+            });
+        }
+        attachReturnListeners();
+    </script>
+}
+

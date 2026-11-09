@@ -1,0 +1,210 @@
+@model IEnumerable<SuperMarket.Models.ViewModels.BatchItemViewModel>
+
+@{
+    ViewData["Title"] = "Product Batch Management";
+    var products = ViewBag.Products as List<SuperMarket.Models.ViewModels.ProductListViewModel> ?? new();
+    int? selectedProductId = ViewBag.ProductId as int?;
+    string? selectedProdName = ViewBag.SelectedProductName as string;
+}
+
+<div class="container-fluid px-4 my-4">
+    <!-- Breadcrumb & Top Bar -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+        <div>
+            <h3 class="mb-0 text-dark fw-normal">
+                <i class="bi bi-boxes text-info me-2"></i> Product Batch Management
+            </h3>
+            <div class="text-muted small">
+                Track batch numbers, expiration dates, unit costs, and inventory availability.
+                @if (!string.IsNullOrEmpty(selectedProdName))
+                {
+                    <span class="badge bg-primary ms-1">Filtered by: @selectedProdName</span>
+                }
+            </div>
+        </div>
+        <div class="d-flex gap-2">
+            <a asp-controller="Products" asp-action="Index" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-box-seam me-1"></i> Products List
+            </a>
+            <a asp-action="Create" asp-route-productId="@selectedProductId" class="btn btn-primary btn-sm">
+                <i class="bi bi-plus-lg me-1"></i> Record New Batch
+            </a>
+        </div>
+    </div>
+
+    <!-- Flash Messages -->
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show shadow-sm" role="alert">
+            <i class="bi bi-check-circle-fill me-2"></i> @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <!-- Table Card -->
+    <div class="card shadow-sm border-1 rounded-2">
+        <!-- Filter Header -->
+        <div class="card-header bg-white py-3 border-bottom">
+            <form method="get" asp-action="Index" class="row g-2 align-items-center">
+                <div class="col-md-6 col-lg-5">
+                    <div class="input-group input-group-sm">
+                        <label class="input-group-text bg-white text-muted">Filter by Product</label>
+                        <select name="productId" class="form-select" onchange="this.form.submit()">
+                            <option value="">-- All Products --</option>
+                            @foreach (var p in products)
+                            {
+                                <option value="@p.ProductId" selected="@(selectedProductId == p.ProductId ? "selected" : null)">
+                                    @p.ProductName (@p.Sku)
+                                </option>
+                            }
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-7 text-md-end">
+                    @if (selectedProductId.HasValue)
+                    {
+                        <a asp-action="Index" class="btn btn-sm btn-outline-secondary">
+                            <i class="bi bi-x-circle me-1"></i> Clear Filter
+                        </a>
+                    }
+                </div>
+            </form>
+        </div>
+
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light">
+                        <tr class="text-secondary small fw-bold">
+                            <th class="ps-4 py-3">Batch Number</th>
+                            <th class="py-3">Product Name & SKU</th>
+                            <th class="py-3">Manufacture Date</th>
+                            <th class="py-3">Expiration Date</th>
+                            <th class="py-3 text-end">Unit Cost</th>
+                            <th class="py-3 text-center">Available Stock</th>
+                            <th class="py-3 text-center">Batch Status</th>
+                            <th class="pe-4 py-3 text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (!Model.Any())
+                        {
+                            <tr>
+                                <td colspan="8" class="text-center py-5 text-muted">
+                                    <i class="bi bi-boxes fs-2 d-block mb-2 text-secondary"></i>
+                                    No batches found matching the selection.
+                                    <div class="mt-2">
+                                        <a asp-action="Create" asp-route-productId="@selectedProductId" class="btn btn-sm btn-primary">
+                                            Record New Batch
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                        else
+                        {
+                            @foreach (var item in Model)
+                            {
+                                <tr>
+                                    <!-- Batch Number -->
+                                    <td class="ps-4 font-monospace fw-bold text-dark">
+                                        <i class="bi bi-box me-1 text-primary"></i>
+                                        @item.BatchNumber
+                                    </td>
+
+                                    <!-- Product -->
+                                    <td>
+                                        <a asp-controller="Products" asp-action="Details" asp-route-id="@item.ProductId" class="fw-semibold text-dark text-decoration-none">
+                                            @item.ProductName
+                                        </a>
+                                        <div class="text-muted small font-monospace">@item.ProductSku</div>
+                                    </td>
+
+                                    <!-- Manufacture Date -->
+                                    <td class="small text-muted font-monospace">
+                                        @(item.ManufactureDate.HasValue ? item.ManufactureDate.Value.ToString("yyyy-MM-dd") : "—")
+                                    </td>
+
+                                    <!-- Expiration Date & Alert Badges -->
+                                    <td>
+                                        @if (item.ExpirationDate.HasValue)
+                                        {
+                                            <span class="small font-monospace">@item.ExpirationDate.Value.ToString("yyyy-MM-dd")</span>
+                                            @if (item.ExpiryStatus == "Expired")
+                                            {
+                                                <span class="badge bg-danger-subtle text-danger border border-danger-subtle ms-1 py-0 px-1" style="font-size: 0.7rem;">
+                                                    <i class="bi bi-x-circle me-1"></i>Expired
+                                                </span>
+                                            }
+                                            else if (item.ExpiryStatus == "Expiring Soon")
+                                            {
+                                                <span class="badge bg-warning-subtle text-warning border border-warning-subtle ms-1 py-0 px-1" style="font-size: 0.7rem;">
+                                                    <i class="bi bi-clock me-1"></i>Expiring in @item.DaysUntilExpiry d
+                                                </span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-success-subtle text-success border border-success-subtle ms-1 py-0 px-1" style="font-size: 0.7rem;">
+                                                    <i class="bi bi-check2 me-1"></i>Good
+                                                </span>
+                                            }
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted small">No Expiry Date</span>
+                                        }
+                                    </td>
+
+                                    <!-- Unit Cost -->
+                                    <td class="text-end font-monospace small">
+                                        $@item.UnitCost.ToString("F2")
+                                    </td>
+
+                                    <!-- Available Stock -->
+                                    <td class="text-center">
+                                        <span class="badge bg-light text-dark border fs-6 px-2 py-1">
+                                            @item.TotalQuantity
+                                        </span>
+                                    </td>
+
+                                    <!-- Status -->
+                                    <td class="text-center">
+                                        @if (item.IsActive)
+                                        {
+                                            <span class="badge bg-success-subtle text-success border border-success-subtle py-1 px-2">Active</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-secondary-subtle text-secondary py-1 px-2">Inactive</span>
+                                        }
+                                    </td>
+
+                                    <!-- Actions -->
+                                    <td class="pe-4 text-end">
+                                        <div class="btn-group btn-group-sm">
+                                            <a asp-action="Details" asp-route-id="@item.BatchId" class="btn btn-outline-secondary" title="Details">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                            <a asp-action="Edit" asp-route-id="@item.BatchId" class="btn btn-outline-primary" title="Edit">
+                                                <i class="bi bi-pencil-square"></i>
+                                            </a>
+                                            <a asp-action="Delete" asp-route-id="@item.BatchId" class="btn btn-outline-danger" title="Delete">
+                                                <i class="bi bi-trash"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card-footer bg-white border-top py-2 px-4 text-muted small d-flex justify-content-between align-items-center">
+            <span>Total Batches: <strong>@Model.Count()</strong></span>
+            <span>Total Units Across Batches: <strong>@Model.Sum(b => b.TotalQuantity)</strong></span>
+        </div>
+    </div>
+</div>
+

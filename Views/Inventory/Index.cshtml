@@ -1,0 +1,302 @@
+@model SuperMarket.Models.ViewModels.StockDashboardViewModel
+@{
+    ViewData["Title"] = "Stock Dashboard";
+}
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="bi bi-check-circle me-2"></i>@TempData["SuccessMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-triangle me-2"></i>@TempData["ErrorMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="mb-0"><i class="bi bi-speedometer2 text-primary me-2"></i>Stock Dashboard</h2>
+        <p class="text-muted mb-0 small">Real-time inventory overview across all locations</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a asp-action="StockByLocation" class="btn btn-outline-primary btn-sm"><i class="bi bi-geo-alt me-1"></i>View Stock</a>
+        <a asp-action="Valuation" class="btn btn-outline-success btn-sm"><i class="bi bi-currency-dollar me-1"></i>Valuation</a>
+        <a asp-action="Locations" class="btn btn-outline-secondary btn-sm"><i class="bi bi-building me-1"></i>Locations</a>
+    </div>
+</div>
+
+<!-- KPI Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-sm-6 col-xl-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body d-flex align-items-center gap-3">
+                <div class="bg-primary bg-opacity-10 rounded-3 p-3">
+                    <i class="bi bi-building fs-3 text-primary"></i>
+                </div>
+                <div>
+                    <div class="fs-2 fw-bold text-primary">@Model.TotalActiveLocations</div>
+                    <div class="text-muted small">Active Locations</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body d-flex align-items-center gap-3">
+                <div class="bg-success bg-opacity-10 rounded-3 p-3">
+                    <i class="bi bi-currency-dollar fs-3 text-success"></i>
+                </div>
+                <div>
+                    <div class="fs-2 fw-bold text-success">$@Model.TotalInventoryValue.ToString("N2")</div>
+                    <div class="text-muted small">Total Inventory Value</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body d-flex align-items-center gap-3">
+                <div class="bg-warning bg-opacity-10 rounded-3 p-3">
+                    <i class="bi bi-exclamation-triangle fs-3 text-warning"></i>
+                </div>
+                <div>
+                    <div class="fs-2 fw-bold text-warning">@Model.TotalLowStockAlerts</div>
+                    <div class="text-muted small">Low / Out of Stock</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body d-flex align-items-center gap-3">
+                <div class="bg-danger bg-opacity-10 rounded-3 p-3">
+                    <i class="bi bi-clock-history fs-3 text-danger"></i>
+                </div>
+                <div>
+                    <div class="fs-2 fw-bold text-danger">@Model.TotalExpiringBatches</div>
+                    <div class="text-muted small">Expiring Batches (30d)</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Pending alerts row -->
+@if (Model.PendingAdjustments > 0 || Model.PendingTransfers > 0)
+{
+    <div class="row g-2 mb-4">
+        @if (Model.PendingAdjustments > 0)
+        {
+            <div class="col-auto">
+                <a asp-controller="StockAdjustments" asp-action="Index" asp-route-status="Pending" class="btn btn-warning btn-sm">
+                    <i class="bi bi-pencil-square me-1"></i>@Model.PendingAdjustments Pending Adjustment(s) awaiting approval
+                </a>
+            </div>
+        }
+        @if (Model.PendingTransfers > 0)
+        {
+            <div class="col-auto">
+                <a asp-controller="StockTransfers" asp-action="Index" asp-route-status="Requested" class="btn btn-info btn-sm text-white">
+                    <i class="bi bi-arrow-left-right me-1"></i>@Model.PendingTransfers Pending Transfer Request(s)
+                </a>
+            </div>
+        }
+    </div>
+}
+
+<div class="row g-4">
+    <!-- Location Summaries -->
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center py-3">
+                <h6 class="mb-0 fw-semibold"><i class="bi bi-geo-alt text-primary me-2"></i>Location Overview</h6>
+                <a asp-action="Locations" class="btn btn-link btn-sm p-0 text-decoration-none">Manage →</a>
+            </div>
+            <div class="card-body p-0">
+                @if (!Model.Locations.Any())
+                {
+                    <div class="p-4 text-center text-muted">No locations configured.</div>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0 align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Location</th>
+                                    <th>Type</th>
+                                    <th>Products</th>
+                                    <th>Units</th>
+                                    <th>Value</th>
+                                    <th>Health</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var loc in Model.Locations)
+                                {
+                                    var healthPct = loc.TotalProducts > 0
+                                        ? (int)(100.0 * (loc.TotalProducts - loc.LowStockCount - loc.OutOfStockCount) / loc.TotalProducts)
+                                        : 100;
+                                    var healthColor = healthPct >= 80 ? "success" : healthPct >= 50 ? "warning" : "danger";
+                                    <tr>
+                                        <td>
+                                            <div class="fw-semibold">@loc.LocationName</div>
+                                            @if (!loc.IsActive)
+                                            {
+                                                <span class="badge bg-secondary">Inactive</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            <span class="badge @(loc.LocationType == "Warehouse" ? "bg-primary" : loc.LocationType == "Branch" ? "bg-info" : "bg-secondary")">
+                                                @loc.LocationType
+                                            </span>
+                                        </td>
+                                        <td>@loc.TotalProducts</td>
+                                        <td>@loc.TotalUnits.ToString("N0")</td>
+                                        <td class="fw-semibold">$@loc.TotalInventoryValue.ToString("N2")</td>
+                                        <td style="min-width:100px">
+                                            <div class="d-flex align-items-center gap-2">
+                                                <div class="progress flex-grow-1" style="height:6px">
+                                                    <div class="progress-bar bg-@healthColor" style="width:@healthPct%"></div>
+                                                </div>
+                                                <span class="text-@healthColor small fw-bold">@healthPct%</span>
+                                            </div>
+                                            @if (loc.LowStockCount > 0)
+                                            {
+                                                <span class="badge bg-warning text-dark ms-1 small">@loc.LowStockCount low</span>
+                                            }
+                                            @if (loc.OutOfStockCount > 0)
+                                            {
+                                                <span class="badge bg-danger ms-1 small">@loc.OutOfStockCount out</span>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Low Stock Alerts -->
+        @if (Model.LowStockAlerts.Any())
+        {
+            <div class="card border-0 shadow-sm mt-4">
+                <div class="card-header bg-warning bg-opacity-10 border-bottom py-3">
+                    <h6 class="mb-0 fw-semibold text-warning"><i class="bi bi-exclamation-triangle me-2"></i>Low Stock Alerts</h6>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-sm mb-0 align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Product</th>
+                                    <th>Location</th>
+                                    <th>Qty</th>
+                                    <th>Min</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var alert in Model.LowStockAlerts)
+                                {
+                                    <tr class="@(alert.StockStatus == "OutOfStock" ? "table-danger" : "table-warning")">
+                                        <td>
+                                            <div class="fw-semibold small">@alert.ProductName</div>
+                                            <div class="text-muted" style="font-size:11px">@alert.ProductSku</div>
+                                        </td>
+                                        <td class="small">@alert.LocationName</td>
+                                        <td class="fw-bold">@alert.Quantity.ToString("N0")</td>
+                                        <td class="text-muted small">@alert.MinStockLevel</td>
+                                        <td>
+                                            @if (alert.StockStatus == "OutOfStock")
+                                            {
+                                                <span class="badge bg-danger">Out of Stock</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-warning text-dark">Low Stock</span>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+    <!-- Recent Transactions -->
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center py-3">
+                <h6 class="mb-0 fw-semibold"><i class="bi bi-journal-text text-dark me-2"></i>Recent Transactions</h6>
+                <a asp-controller="InventoryTransactions" asp-action="Index" class="btn btn-link btn-sm p-0 text-decoration-none">View All →</a>
+            </div>
+            <div class="list-group list-group-flush">
+                @if (!Model.RecentTransactions.Any())
+                {
+                    <div class="list-group-item text-center text-muted py-4">No transactions yet.</div>
+                }
+                @foreach (var txn in Model.RecentTransactions)
+                {
+                    var txnColor = txn.TransactionType switch
+                    {
+                        "Purchase" => "success",
+                        "Sale" => "primary",
+                        "Adjustment" => "warning",
+                        "TransferOut" => "secondary",
+                        "TransferIn" => "info",
+                        "Return" => "danger",
+                        _ => "dark"
+                    };
+                    <div class="list-group-item border-0 py-2">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <span class="badge bg-@txnColor mb-1">@txn.TransactionType</span>
+                                <div class="small fw-semibold">@txn.ProductName</div>
+                                <div class="text-muted" style="font-size:11px">@txn.LocationName</div>
+                            </div>
+                            <div class="text-end">
+                                <div class="fw-bold @(txn.QuantityDelta >= 0 ? "text-success" : "text-danger")">
+                                    @(txn.QuantityDelta >= 0 ? "+" : "")@txn.QuantityDelta.ToString("N0")
+                                </div>
+                                <div class="text-muted" style="font-size:11px">@txn.Timestamp?.ToString("MMM d, HH:mm")</div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="card border-0 shadow-sm mt-4">
+            <div class="card-header bg-white border-bottom py-3">
+                <h6 class="mb-0 fw-semibold"><i class="bi bi-lightning me-2"></i>Quick Actions</h6>
+            </div>
+            <div class="card-body d-grid gap-2">
+                <a asp-controller="StockAdjustments" asp-action="Create" class="btn btn-outline-warning btn-sm text-start">
+                    <i class="bi bi-pencil-square me-2"></i>Record Stock Adjustment
+                </a>
+                <a asp-controller="StockTransfers" asp-action="Create" class="btn btn-outline-secondary btn-sm text-start">
+                    <i class="bi bi-arrow-left-right me-2"></i>Create Stock Transfer
+                </a>
+                <a asp-controller="CustomerReturns" asp-action="Create" class="btn btn-outline-danger btn-sm text-start">
+                    <i class="bi bi-arrow-return-left me-2"></i>Record Customer Return
+                </a>
+                <a asp-action="CreateLocation" class="btn btn-outline-primary btn-sm text-start">
+                    <i class="bi bi-plus-circle me-2"></i>Add New Location
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+

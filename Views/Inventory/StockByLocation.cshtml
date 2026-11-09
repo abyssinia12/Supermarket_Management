@@ -1,0 +1,138 @@
+@model List<SuperMarket.Models.ViewModels.LocationStockViewModel>
+@{
+    ViewData["Title"] = "Stock by Location";
+    var selectedLocationId = ViewBag.SelectedLocationId as int?;
+    var selectedProductId = ViewBag.SelectedProductId as int?;
+    var selectedStatus = ViewBag.SelectedStockStatus as string;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h2 class="mb-0"><i class="bi bi-geo-alt text-info me-2"></i>Stock by Location</h2>
+        <p class="text-muted mb-0 small">@Model.Count items found</p>
+    </div>
+    <a asp-action="Index" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left me-1"></i>Dashboard</a>
+</div>
+
+<!-- Filter Bar -->
+<div class="card border-0 shadow-sm mb-3">
+    <div class="card-body">
+        <form method="get" class="row g-2 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label small fw-semibold">Location</label>
+                <select name="locationId" class="form-select form-select-sm" asp-items="ViewBag.Locations">
+                    <option value="">All Locations</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small fw-semibold">Product</label>
+                <select name="productId" class="form-select form-select-sm" asp-items="ViewBag.Products">
+                    <option value="">All Products</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small fw-semibold">Stock Status</label>
+                <select name="stockStatus" class="form-select form-select-sm">
+                    <option value="" selected="@(string.IsNullOrEmpty(selectedStatus))">All Status</option>
+                    <option value="Normal" selected="@(selectedStatus == "Normal")">Normal</option>
+                    <option value="Low" selected="@(selectedStatus == "Low")">Low Stock</option>
+                    <option value="OutOfStock" selected="@(selectedStatus == "OutOfStock")">Out of Stock</option>
+                    <option value="Expiring" selected="@(selectedStatus == "Expiring")">Expiring Soon</option>
+                </select>
+            </div>
+            <div class="col-md-3 d-flex gap-2">
+                <button type="submit" class="btn btn-primary btn-sm flex-grow-1"><i class="bi bi-funnel me-1"></i>Filter</button>
+                <a asp-action="StockByLocation" class="btn btn-outline-secondary btn-sm">Clear</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+        @if (!Model.Any())
+        {
+            <div class="text-center py-5 text-muted">
+                <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                No stock records found for the selected filters.
+            </div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Product</th>
+                            <th>Category</th>
+                            <th>Location</th>
+                            <th>Batch #</th>
+                            <th>Expiry</th>
+                            <th class="text-end">Qty</th>
+                            <th class="text-end">Min Stock</th>
+                            <th>Status</th>
+                            <th class="text-end">Value</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var s in Model)
+                        {
+                            var rowClass = s.StockStatus == "OutOfStock" ? "table-danger"
+                                        : s.IsExpired ? "table-danger"
+                                        : s.StockStatus == "Low" ? "table-warning"
+                                        : s.IsExpiringSoon ? "table-warning"
+                                        : "";
+                            <tr class="@rowClass">
+                                <td>
+                                    <div class="fw-semibold">@s.ProductName</div>
+                                    <div class="text-muted" style="font-size:12px">@s.ProductSku</div>
+                                </td>
+                                <td class="small text-muted">@s.CategoryName</td>
+                                <td>
+                                    <span class="badge @(s.LocationType == "Warehouse" ? "bg-primary" : s.LocationType == "Branch" ? "bg-info" : "bg-secondary")">
+                                        @s.LocationName
+                                    </span>
+                                </td>
+                                <td class="small">@(s.BatchNumber ?? "—")</td>
+                                <td class="small">
+                                    @if (s.ExpirationDate.HasValue)
+                                    {
+                                        if (s.IsExpired)
+                                        {
+                                            <span class="badge bg-danger">Expired @s.ExpirationDate.Value.ToString("MMM d, yyyy")</span>
+                                        }
+                                        else if (s.IsExpiringSoon)
+                                        {
+                                            <span class="badge bg-warning text-dark">Exp @s.ExpirationDate.Value.ToString("MMM d, yyyy")</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">@s.ExpirationDate.Value.ToString("MMM d, yyyy")</span>
+                                        }
+                                    }
+                                    else { <span class="text-muted">N/A</span> }
+                                </td>
+                                <td class="text-end fw-bold">@s.Quantity.ToString("N0")</td>
+                                <td class="text-end text-muted small">@s.MinStockLevel</td>
+                                <td>
+                                    @if (s.StockStatus == "OutOfStock") { <span class="badge bg-danger">Out of Stock</span> }
+                                    else if (s.StockStatus == "Low") { <span class="badge bg-warning text-dark">Low Stock</span> }
+                                    else { <span class="badge bg-success">Normal</span> }
+                                    @if (s.IsExpiringSoon && !s.IsExpired) { <span class="badge bg-warning text-dark ms-1">Expiring</span> }
+                                </td>
+                                <td class="text-end fw-semibold">$@s.InventoryValue.ToString("N2")</td>
+                            </tr>
+                        }
+                    </tbody>
+                    <tfoot class="table-light">
+                        <tr>
+                            <td colspan="8" class="fw-bold text-end">Total Value:</td>
+                            <td class="text-end fw-bold text-success">$@Model.Sum(s => s.InventoryValue).ToString("N2")</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        }
+    </div>
+</div>
+

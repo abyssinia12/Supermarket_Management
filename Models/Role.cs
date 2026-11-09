@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -35,4 +35,6 @@ public partial class Role
     [ForeignKey("RoleId")]
     [InverseProperty("Roles")]
     public virtual ICollection<Permission> Permissions { get; set; } = new List<Permission>();
+
+    public virtual ICollection<Menu> Menus { get; set; } = new List<Menu>();
 }

@@ -1,0 +1,325 @@
+@model SuperMarket.Models.ViewModels.ProductFormViewModel
+
+@{
+    ViewData["Title"] = "Register New Product";
+}
+
+<div class="container my-4" style="max-width: 950px;">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-action="Index">Products</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Register Product</li>
+        </ol>
+    </nav>
+
+    <div class="card shadow-sm border-1 rounded-2">
+        <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+            <h5 class="mb-0 text-dark">
+                <i class="bi bi-plus-circle text-primary me-2"></i> Register New Product
+            </h5>
+            <a asp-action="Index" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i> Back to Product List
+            </a>
+        </div>
+
+        <div class="card-body p-4">
+            <form asp-action="Create" method="post" id="createProductForm">
+                @Html.AntiForgeryToken()
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+                <!-- Section 1: Basic Identifiers -->
+                <div class="card bg-light border-0 p-3 mb-4 rounded-3">
+                    <h6 class="fw-bold text-dark mb-3">
+                        <i class="bi bi-upc-scan text-primary me-1"></i> Product Identification & Details
+                    </h6>
+                    <div class="row g-3">
+                        <!-- Product Name -->
+                        <div class="col-md-12">
+                            <label asp-for="ProductName" class="form-label fw-semibold">
+                                Product Name <span class="text-danger">*</span>
+                            </label>
+                            <input asp-for="ProductName" class="form-control" placeholder="e.g. Farm Fresh Whole Milk 1L, Artisan Sourdough Bread" autofocus />
+                            <span asp-validation-for="ProductName" class="text-danger small"></span>
+                        </div>
+
+                        <!-- Product Code (SKU) -->
+                        <div class="col-md-6">
+                            <label asp-for="Sku" class="form-label fw-semibold">
+                                Unique Product Code (SKU) <span class="text-danger">*</span>
+                            </label>
+                            <div class="input-group">
+                                <input asp-for="Sku" id="inputSku" class="form-control font-monospace text-uppercase" placeholder="e.g. PRD-MILK-001" />
+                                <button type="button" class="btn btn-outline-secondary" id="btnGenSku" title="Generate Random SKU">
+                                    <i class="bi bi-arrow-repeat"></i> Auto
+                                </button>
+                            </div>
+                            <span asp-validation-for="Sku" class="text-danger small"></span>
+                            <div class="form-text">Unique alphanumeric identifier used for inventory tracking.</div>
+                        </div>
+
+                        <!-- Barcode -->
+                        <div class="col-md-6">
+                            <label asp-for="Barcode" class="form-label fw-semibold">
+                                Barcode / UPC / EAN <span class="text-danger">*</span>
+                            </label>
+                            <div class="input-group">
+                                <input asp-for="Barcode" id="inputBarcode" class="form-control font-monospace" placeholder="e.g. 890100100001" />
+                                <button type="button" class="btn btn-outline-secondary" id="btnGenBarcode" title="Generate Barcode">
+                                    <i class="bi bi-upc"></i> Auto
+                                </button>
+                            </div>
+                            <span asp-validation-for="Barcode" class="text-danger small"></span>
+                            <div class="form-text">Scannable barcode code for POS and inventory scanners.</div>
+                        </div>
+
+                        <!-- Description -->
+                        <div class="col-md-12">
+                            <label asp-for="Description" class="form-label fw-semibold">Product Description</label>
+                            <textarea asp-for="Description" class="form-control" rows="2" placeholder="Brief description, ingredients, packaging details or supplier specifications..."></textarea>
+                            <span asp-validation-for="Description" class="text-danger small"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 2: Classification & Pricing -->
+                <div class="card bg-light border-0 p-3 mb-4 rounded-3">
+                    <h6 class="fw-bold text-dark mb-3">
+                        <i class="bi bi-tag text-primary me-1"></i> Categorization & Pricing
+                    </h6>
+                    <div class="row g-3">
+                        <!-- Category with Quick-Add button -->
+                        <div class="col-md-6">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <label asp-for="CategoryId" class="form-label fw-semibold mb-0">
+                                    Product Category <span class="text-danger">*</span>
+                                </label>
+                                <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none" data-bs-toggle="modal" data-bs-target="#quickCategoryModal">
+                                    <i class="bi bi-plus-circle me-1"></i> New Category
+                                </button>
+                            </div>
+                            <select asp-for="CategoryId" class="form-select" id="selectCategory" asp-items="Model.AvailableCategories">
+                                <option value="">-- Select Category --</option>
+                            </select>
+                            <span asp-validation-for="CategoryId" class="text-danger small"></span>
+                        </div>
+
+                        <!-- Unit of Measure -->
+                        <div class="col-md-6">
+                            <label asp-for="UnitOfMeasure" class="form-label fw-semibold">
+                                Unit of Measure (UOM) <span class="text-danger">*</span>
+                            </label>
+                            <select asp-for="UnitOfMeasure" class="form-select">
+                                @foreach (var uom in Model.AvailableUnits)
+                                {
+                                    <option value="@uom" selected="@(Model.UnitOfMeasure == uom ? "selected" : null)">@uom</option>
+                                }
+                            </select>
+                            <span asp-validation-for="UnitOfMeasure" class="text-danger small"></span>
+                        </div>
+
+                        <!-- Purchase Cost -->
+                        <div class="col-md-4">
+                            <label asp-for="PurchaseCost" class="form-label fw-semibold">
+                                Purchase Cost ($) <span class="text-danger">*</span>
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input asp-for="PurchaseCost" type="number" step="0.01" min="0" class="form-control" id="inputCost" />
+                            </div>
+                            <span asp-validation-for="PurchaseCost" class="text-danger small"></span>
+                        </div>
+
+                        <!-- Selling Price -->
+                        <div class="col-md-4">
+                            <label asp-for="SellingPrice" class="form-label fw-semibold">
+                                Selling Price ($) <span class="text-danger">*</span>
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input asp-for="SellingPrice" type="number" step="0.01" min="0" class="form-control" id="inputPrice" />
+                            </div>
+                            <span asp-validation-for="SellingPrice" class="text-danger small"></span>
+                        </div>
+
+                        <!-- Min Stock Level -->
+                        <div class="col-md-4">
+                            <label asp-for="MinStockLevel" class="form-label fw-semibold">
+                                Min Stock Alert Level <span class="text-danger">*</span>
+                            </label>
+                            <input asp-for="MinStockLevel" type="number" min="0" class="form-control" />
+                            <span asp-validation-for="MinStockLevel" class="text-danger small"></span>
+                            <div class="form-text">Triggers "Low Stock" alert when stock falls to this number.</div>
+                        </div>
+
+                        <!-- Active Toggle -->
+                        <div class="col-12">
+                            <div class="form-check form-switch pt-1">
+                                <input class="form-check-input" type="checkbox" asp-for="IsActive" id="activeSwitch" />
+                                <label class="form-check-label fw-semibold" for="activeSwitch">
+                                    Product is Active and available for sale
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 3: Optional Initial Batch & Stock -->
+                <div class="card border p-3 mb-4 rounded-3 shadow-none">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="form-check form-switch mb-0">
+                                <input class="form-check-input" type="checkbox" asp-for="CreateInitialBatch" id="initialBatchSwitch" data-bs-toggle="collapse" data-bs-target="#batchDetailsSection" />
+                                <label class="form-check-label fw-bold text-dark fs-6" for="initialBatchSwitch">
+                                    <i class="bi bi-boxes text-primary me-1"></i> Record Initial Batch & Opening Stock (Optional)
+                                </label>
+                            </div>
+                            <div class="text-muted small ps-4">Check this box if you already have stock on hand to record initial batch number, expiry date, and quantity.</div>
+                        </div>
+                    </div>
+
+                    <div id="batchDetailsSection" class="collapse @(Model.CreateInitialBatch ? "show" : "") mt-3 pt-3 border-top">
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label asp-for="InitialBatchNumber" class="form-label fw-semibold">Batch Number</label>
+                                <input asp-for="InitialBatchNumber" class="form-control font-monospace" placeholder="e.g. BATCH-2026-001" />
+                                <span asp-validation-for="InitialBatchNumber" class="text-danger small"></span>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label asp-for="InitialManufactureDate" class="form-label fw-semibold">Manufacture Date</label>
+                                <input asp-for="InitialManufactureDate" type="date" class="form-control" />
+                                <span asp-validation-for="InitialManufactureDate" class="text-danger small"></span>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label asp-for="InitialExpirationDate" class="form-label fw-semibold">Expiration Date</label>
+                                <input asp-for="InitialExpirationDate" type="date" class="form-control" />
+                                <span asp-validation-for="InitialExpirationDate" class="text-danger small"></span>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label asp-for="InitialQuantity" class="form-label fw-semibold">Opening Stock Quantity</label>
+                                <input asp-for="InitialQuantity" type="number" step="1" min="0" class="form-control" placeholder="e.g. 50" />
+                                <span asp-validation-for="InitialQuantity" class="text-danger small"></span>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label asp-for="InitialLocationId" class="form-label fw-semibold">Storage Location</label>
+                                <select asp-for="InitialLocationId" class="form-select" asp-items="Model.AvailableLocations">
+                                    <option value="">-- Select Location --</option>
+                                </select>
+                                <span asp-validation-for="InitialLocationId" class="text-danger small"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Form Buttons -->
+                <div class="d-flex justify-content-between align-items-center pt-2">
+                    <a asp-action="Index" class="btn btn-outline-secondary px-4">
+                        Cancel
+                    </a>
+                    <button type="submit" class="btn btn-primary px-4 py-2 fw-semibold">
+                        <i class="bi bi-check-lg me-1"></i> Register Product
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Quick Add Category -->
+<div class="modal fade" id="quickCategoryModal" tabindex="-1" aria-labelledby="quickCategoryModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="quickCategoryModalLabel"><i class="bi bi-tag text-primary me-2"></i>Quick Add Category</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="modalAlert" class="alert alert-danger d-none"></div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Category Name <span class="text-danger">*</span></label>
+                    <input type="text" id="quickCatName" class="form-control" placeholder="e.g. Frozen Foods, Pet Care" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Description</label>
+                    <textarea id="quickCatDesc" class="form-control" rows="2" placeholder="Optional category description"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="btnSaveQuickCategory">Create & Select</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+
+    <script>
+        // Auto-generate SKU
+        document.getElementById('btnGenSku').addEventListener('click', function () {
+            fetch('@Url.Action("GenerateSku", "Products")')
+                .then(res => res.json())
+                .then(data => {
+                    document.getElementById('inputSku').value = data.sku;
+                });
+        });
+
+        // Auto-generate Barcode
+        document.getElementById('btnGenBarcode').addEventListener('click', function () {
+            fetch('@Url.Action("GenerateBarcode", "Products")')
+                .then(res => res.json())
+                .then(data => {
+                    document.getElementById('inputBarcode').value = data.barcode;
+                });
+        });
+
+        // Quick Category Creation via AJAX
+        document.getElementById('btnSaveQuickCategory').addEventListener('click', function () {
+            var catName = document.getElementById('quickCatName').value.trim();
+            var catDesc = document.getElementById('quickCatDesc').value.trim();
+            var alertDiv = document.getElementById('modalAlert');
+
+            if (!catName) {
+                alertDiv.innerText = "Please enter a category name.";
+                alertDiv.classList.remove('d-none');
+                return;
+            }
+
+            var formData = new FormData();
+            formData.append('categoryName', catName);
+            formData.append('description', catDesc);
+            formData.append('__RequestVerificationToken', document.querySelector('input[name="__RequestVerificationToken"]').value);
+
+            fetch('@Url.Action("QuickCreate", "Categories")', {
+                method: 'POST',
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    var select = document.getElementById('selectCategory');
+                    var option = new Option(data.categoryName, data.categoryId, true, true);
+                    select.add(option);
+                    var modal = bootstrap.Modal.getInstance(document.getElementById('quickCategoryModal'));
+                    modal.hide();
+                    document.getElementById('quickCatName').value = '';
+                    document.getElementById('quickCatDesc').value = '';
+                    alertDiv.classList.add('d-none');
+                } else {
+                    alertDiv.innerText = data.message || "Failed to create category.";
+                    alertDiv.classList.remove('d-none');
+                }
+            })
+            .catch(() => {
+                alertDiv.innerText = "Network error. Please try again.";
+                alertDiv.classList.remove('d-none');
+            });
+        });
+    </script>
+}
+

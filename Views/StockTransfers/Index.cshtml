@@ -1,0 +1,89 @@
+@model List<SuperMarket.Models.ViewModels.StockTransferListViewModel>
+@{
+    ViewData["Title"] = "Stock Transfers";
+    var currentStatus = ViewBag.StatusFilter as string;
+}
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show"><i class="bi bi-check-circle me-2"></i>@TempData["SuccessMessage"]<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+}
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show"><i class="bi bi-exclamation-triangle me-2"></i>@TempData["ErrorMessage"]<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="mb-0"><i class="bi bi-arrow-left-right text-secondary me-2"></i>Stock Transfers</h2>
+    <a asp-action="Create" class="btn btn-primary btn-sm"><i class="bi bi-plus-circle me-1"></i>New Transfer</a>
+</div>
+
+<ul class="nav nav-tabs mb-3">
+    <li class="nav-item"><a class="nav-link @(string.IsNullOrEmpty(currentStatus) ? "active" : "")" asp-action="Index">All</a></li>
+    <li class="nav-item"><a class="nav-link @(currentStatus == "Requested" ? "active" : "")" asp-action="Index" asp-route-status="Requested">Requested</a></li>
+    <li class="nav-item"><a class="nav-link @(currentStatus == "Approved" ? "active" : "")" asp-action="Index" asp-route-status="Approved">Approved</a></li>
+    <li class="nav-item"><a class="nav-link @(currentStatus == "Dispatched" ? "active" : "")" asp-action="Index" asp-route-status="Dispatched">Dispatched</a></li>
+    <li class="nav-item"><a class="nav-link @(currentStatus == "Received" ? "active" : "")" asp-action="Index" asp-route-status="Received">Received</a></li>
+    <li class="nav-item"><a class="nav-link @(currentStatus == "Cancelled" ? "active" : "")" asp-action="Index" asp-route-status="Cancelled">Cancelled</a></li>
+</ul>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+        @if (!Model.Any())
+        {
+            <div class="text-center py-5 text-muted">
+                <i class="bi bi-arrow-left-right fs-1 d-block mb-2"></i>
+                No transfers found. <a asp-action="Create">Create one now.</a>
+            </div>
+        }
+        else
+        {
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>#</th>
+                        <th>From → To</th>
+                        <th>Status</th>
+                        <th>Items</th>
+                        <th class="text-end">Units</th>
+                        <th>Requested By</th>
+                        <th>Date</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var t in Model)
+                    {
+                        var statusColor = t.Status switch
+                        {
+                            "Requested" => "warning",
+                            "Approved" => "info",
+                            "Dispatched" => "primary",
+                            "Received" => "success",
+                            "Cancelled" => "danger",
+                            _ => "secondary"
+                        };
+                        <tr>
+                            <td class="text-muted small">#@t.TransferId</td>
+                            <td>
+                                <div class="fw-semibold small">@t.FromLocationName</div>
+                                <div class="text-muted small"><i class="bi bi-arrow-down"></i> @t.ToLocationName</div>
+                            </td>
+                            <td><span class="badge bg-@statusColor">@t.Status</span></td>
+                            <td class="small">@t.ItemCount item(s)</td>
+                            <td class="text-end fw-semibold">@t.TotalUnits.ToString("N0")</td>
+                            <td class="small">@t.RequestedByUser</td>
+                            <td class="small text-muted">@t.RequestedAt?.ToString("MMM d, yyyy")</td>
+                            <td class="text-end">
+                                <a asp-action="Details" asp-route-id="@t.TransferId" class="btn btn-outline-secondary btn-sm">
+                                    <i class="bi bi-eye"></i> View
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+</div>
+

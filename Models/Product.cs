@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -31,6 +31,10 @@ public partial class Product
     [StringLength(150)]
     [Unicode(false)]
     public string ProductName { get; set; } = null!;
+
+    [NotMapped]
+    [StringLength(500)]
+    public string? Description { get; set; }
 
     [StringLength(20)]
     [Unicode(false)]

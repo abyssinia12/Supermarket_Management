@@ -1,0 +1,106 @@
+@model SuperMarket.Models.Menu
+
+@{
+    ViewData["Title"] = "Menu Item Details";
+}
+
+<div class="container my-4" style="max-width: 750px;">
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-action="Index">Menu</a></li>
+            <li class="breadcrumb-item active" aria-current="page">@Model.Title</li>
+        </ol>
+    </nav>
+
+    <div class="card shadow-sm border-1">
+        <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+            <h5 class="mb-0 text-dark">
+                <i class="bi bi-info-circle text-primary me-2"></i> Menu Item Details
+            </h5>
+            <div class="d-flex gap-2">
+                <a asp-action="Edit" asp-route-id="@Model.MenuId" class="btn btn-sm btn-primary">
+                    <i class="bi bi-pencil-square me-1"></i> Edit
+                </a>
+                <a asp-action="Index" class="btn btn-sm btn-outline-secondary">
+                    <i class="bi bi-arrow-left me-1"></i> Back to List
+                </a>
+            </div>
+        </div>
+        <div class="card-body p-4">
+            <div class="row g-3">
+                <div class="col-sm-4 text-muted fw-semibold">Title:</div>
+                <div class="col-sm-8 text-dark fs-6 fw-bold">@Model.Title</div>
+
+                <div class="col-sm-4 text-muted fw-semibold">Controller:</div>
+                <div class="col-sm-8"><span class="badge bg-light text-dark border">@Model.Controller</span></div>
+
+                <div class="col-sm-4 text-muted fw-semibold">Action:</div>
+                <div class="col-sm-8"><span class="badge bg-light text-dark border">@Model.Action</span></div>
+
+                <div class="col-sm-4 text-muted fw-semibold">Menu Category:</div>
+                <div class="col-sm-8"><span class="badge bg-secondary">@Model.MenuCategory</span></div>
+
+                <div class="col-sm-4 text-muted fw-semibold">IsMenu:</div>
+                <div class="col-sm-8">
+                    @if (Model.IsMenu)
+                    {
+                        <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i> Yes (Shown in Menu)</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-secondary"><i class="bi bi-dash-circle me-1"></i> No (Action Endpoint)</span>
+                    }
+                </div>
+
+                <div class="col-sm-4 text-muted fw-semibold">IsTraceable:</div>
+                <div class="col-sm-8">
+                    @if (Model.IsTraceable)
+                    {
+                        <span class="badge bg-info text-dark"><i class="bi bi-shield-check me-1"></i> Yes (Logged in Audit)</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-secondary"><i class="bi bi-dash-circle me-1"></i> No</span>
+                    }
+                </div>
+
+                <div class="col-sm-4 text-muted fw-semibold">IsActive:</div>
+                <div class="col-sm-8">
+                    @if (Model.IsActive)
+                    {
+                        <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i> Active</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-danger"><i class="bi bi-x-circle me-1"></i> Inactive</span>
+                    }
+                </div>
+
+                <div class="col-sm-4 text-muted fw-semibold">Sort Order:</div>
+                <div class="col-sm-8 text-dark">@Model.SortOrder</div>
+
+                @if (!string.IsNullOrEmpty(Model.Icon))
+                {
+                    <div class="col-sm-4 text-muted fw-semibold">Icon:</div>
+                    <div class="col-sm-8"><i class="@Model.Icon fs-5 me-2"></i> <code>@Model.Icon</code></div>
+                }
+
+                @if (!string.IsNullOrEmpty(Model.Description))
+                {
+                    <div class="col-sm-4 text-muted fw-semibold">Description:</div>
+                    <div class="col-sm-8 text-muted">@Model.Description</div>
+                }
+
+                <div class="col-sm-4 text-muted fw-semibold">Created Date:</div>
+                <div class="col-sm-8 text-muted small">@Model.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss")</div>
+
+                @if (Model.UpdatedAt.HasValue)
+                {
+                    <div class="col-sm-4 text-muted fw-semibold">Last Updated:</div>
+                    <div class="col-sm-8 text-muted small">@Model.UpdatedAt.Value.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss")</div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+

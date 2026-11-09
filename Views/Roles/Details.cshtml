@@ -1,54 +1,139 @@
-﻿@model SuperMarket.Models.Role
+@model SuperMarket.Models.Role
 
 @{
-    ViewData["Title"] = "Details";
+    ViewData["Title"] = "Role Details - " + Model.RoleName;
+    var assignedMenus = ViewBag.AssignedMenus as List<SuperMarket.Models.Menu> ?? new List<SuperMarket.Models.Menu>();
 }
 
-<h1>Details</h1>
+<div class="container my-4" style="max-width: 900px;">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-action="Index">Roles</a></li>
+            <li class="breadcrumb-item active" aria-current="page">@Model.RoleName</li>
+        </ol>
+    </nav>
 
-<div>
-    <h4>Role</h4>
-    <hr />
-    <dl class="row">
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.RoleName)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.RoleName)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.Description)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.Description)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.CreatedAt)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.CreatedAt)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.IsActive)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.IsActive)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.IsDeleted)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.IsDeleted)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.UpdatedAt)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.UpdatedAt)
-        </dd>
-    </dl>
-</div>
-<div>
-    <a asp-action="Edit" asp-route-id="@Model?.RoleId">Edit</a> |
-    <a asp-action="Index">Back to List</a>
+    <div class="card shadow-sm border-1 mb-4">
+        <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+            <h5 class="mb-0 text-dark">
+                <i class="bi bi-shield-check text-primary me-2"></i> Role Details: <span class="fw-bold">@Model.RoleName</span>
+            </h5>
+            <div class="d-flex gap-2">
+                <a asp-action="Edit" asp-route-id="@Model.RoleId" class="btn btn-sm btn-primary">
+                    <i class="bi bi-pencil-square me-1"></i> Edit Role & Menus
+                </a>
+                <a asp-action="Index" class="btn btn-sm btn-outline-secondary">
+                    <i class="bi bi-arrow-left me-1"></i> Back to List
+                </a>
+            </div>
+        </div>
+
+        <div class="card-body p-4">
+            <div class="row g-3 mb-4">
+                <div class="col-sm-3 text-muted fw-semibold">Role Title:</div>
+                <div class="col-sm-9 text-dark fs-5 fw-bold">@Model.RoleName</div>
+
+                <div class="col-sm-3 text-muted fw-semibold">Description:</div>
+                <div class="col-sm-9 text-secondary">
+                    @(string.IsNullOrEmpty(Model.Description) ? "None specified" : Model.Description)
+                </div>
+
+                <div class="col-sm-3 text-muted fw-semibold">Status:</div>
+                <div class="col-sm-9">
+                    @if (Model.IsActive)
+                    {
+                        <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">
+                            <i class="bi bi-check-circle me-1"></i> Active
+                        </span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1">
+                            <i class="bi bi-x-circle me-1"></i> Inactive
+                        </span>
+                    }
+                </div>
+
+                <div class="col-sm-3 text-muted fw-semibold">Created Date:</div>
+                <div class="col-sm-9 text-muted small">
+                    @(Model.CreatedAt.HasValue ? Model.CreatedAt.Value.ToString("yyyy-MM-dd HH:mm") : "—")
+                </div>
+
+                @if (Model.UpdatedAt.HasValue)
+                {
+                    <div class="col-sm-3 text-muted fw-semibold">Last Updated:</div>
+                    <div class="col-sm-9 text-muted small">
+                        @Model.UpdatedAt.Value.ToString("yyyy-MM-dd HH:mm")
+                    </div>
+                }
+            </div>
+
+            <!-- Assigned Menus Section -->
+            <div class="border-top pt-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="fw-bold text-dark mb-0">
+                        <i class="bi bi-menu-button-wide text-primary me-2"></i> Assigned Menus & Actions
+                    </h5>
+                    <span class="badge bg-primary fs-6 px-3 py-1 rounded-pill">
+                        @assignedMenus.Count Total Menus
+                    </span>
+                </div>
+
+                @if (!assignedMenus.Any())
+                {
+                    <div class="alert alert-light border text-center py-4 text-muted">
+                        <i class="bi bi-exclamation-circle fs-3 d-block mb-2 text-secondary"></i>
+                        No menus are currently assigned to this role.
+                        <div class="mt-2">
+                            <a asp-action="Edit" asp-route-id="@Model.RoleId" class="btn btn-sm btn-outline-primary">
+                                Assign Menus Now
+                            </a>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    var groups = assignedMenus.GroupBy(m => m.MenuCategory).OrderBy(g => g.Key);
+
+                    <div class="row g-3">
+                        @foreach (var g in groups)
+                        {
+                            <div class="col-md-6">
+                                <div class="card h-100 border rounded-2 shadow-sm">
+                                    <div class="card-header bg-light py-2 px-3 d-flex justify-content-between align-items-center">
+                                        <span class="fw-semibold text-dark">@g.Key</span>
+                                        <span class="badge bg-secondary-subtle text-secondary small">@g.Count() items</span>
+                                    </div>
+                                    <ul class="list-group list-group-flush small">
+                                        @foreach (var item in g)
+                                        {
+                                            <li class="list-group-item d-flex justify-content-between align-items-center py-2 px-3">
+                                                <div>
+                                                    <span class="fw-semibold text-dark">@item.Title</span>
+                                                    <div class="text-muted" style="font-size: 0.75rem;">
+                                                        @item.Controller/@item.Action
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    @if (item.IsMenu)
+                                                    {
+                                                        <span class="badge bg-success-subtle text-success border border-success-subtle py-0 px-1" style="font-size: 0.68rem;">Menu</span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="badge bg-secondary-subtle text-secondary py-0 px-1" style="font-size: 0.68rem;">Action</span>
+                                                    }
+                                                </div>
+                                            </li>
+                                        }
+                                    </ul>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
 </div>

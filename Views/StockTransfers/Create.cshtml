@@ -1,0 +1,153 @@
+@model SuperMarket.Models.ViewModels.StockTransferFormViewModel
+@{
+    ViewData["Title"] = "Create Stock Transfer";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="mb-0"><i class="bi bi-arrow-left-right text-secondary me-2"></i>Create Stock Transfer</h2>
+    <a asp-action="Index" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left me-1"></i>Back</a>
+</div>
+
+<form asp-action="Create" method="post" id="transferForm">
+    <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+    <div class="card border-0 shadow-sm mb-3">
+        <div class="card-header bg-white border-bottom py-3">
+            <h6 class="mb-0 fw-semibold"><i class="bi bi-geo-alt me-2"></i>Transfer Details</h6>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-5">
+                    <label asp-for="FromLocationId" class="form-label fw-semibold">From Location</label>
+                    <select asp-for="FromLocationId" asp-items="Model.AvailableLocations" class="form-select">
+                        <option value="">— Select Source —</option>
+                    </select>
+                    <span asp-validation-for="FromLocationId" class="text-danger small"></span>
+                </div>
+                <div class="col-md-2 d-flex align-items-end justify-content-center">
+                    <i class="bi bi-arrow-right fs-3 text-secondary mb-2"></i>
+                </div>
+                <div class="col-md-5">
+                    <label asp-for="ToLocationId" class="form-label fw-semibold">To Location</label>
+                    <select asp-for="ToLocationId" asp-items="Model.AvailableLocations" class="form-select">
+                        <option value="">— Select Destination —</option>
+                    </select>
+                    <span asp-validation-for="ToLocationId" class="text-danger small"></span>
+                </div>
+                <div class="col-12">
+                    <label asp-for="Notes" class="form-label fw-semibold">Notes <span class="text-muted">(optional)</span></label>
+                    <textarea asp-for="Notes" class="form-control" rows="2" placeholder="Reason for transfer..."></textarea>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-3">
+        <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between">
+            <h6 class="mb-0 fw-semibold"><i class="bi bi-box-seam me-2"></i>Transfer Items</h6>
+            <button type="button" class="btn btn-outline-primary btn-sm" id="addRowBtn">
+                <i class="bi bi-plus-circle me-1"></i>Add Item
+            </button>
+        </div>
+        <div class="card-body">
+            <div id="itemsContainer">
+                @for (int i = 0; i < Model.Items.Count; i++)
+                {
+                    <div class="row g-2 align-items-end mb-2 item-row">
+                        <div class="col-md-5">
+                            <label class="form-label small fw-semibold">Product</label>
+                            <select name="Items[@i].ProductId" class="form-select product-select" data-index="@i">
+                                <option value="">— Select Product —</option>
+                                @foreach (var p in Model.AvailableProducts)
+                                {
+                                    <option value="@p.Value" selected="@(p.Value == Model.Items[i].ProductId.ToString())">@p.Text</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold">Batch</label>
+                            <select name="Items[@i].BatchId" class="form-select batch-select" data-index="@i">
+                                <option value="">— Select Batch —</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label small fw-semibold">Qty</label>
+                            <input name="Items[@i].Quantity" type="number" step="0.001" min="0.001" class="form-control" value="@Model.Items[i].Quantity" placeholder="0" />
+                        </div>
+                        <div class="col-md-1">
+                            <button type="button" class="btn btn-outline-danger btn-sm remove-row-btn w-100">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-primary"><i class="bi bi-send me-1"></i>Create Transfer Request</button>
+        <a asp-action="Index" class="btn btn-outline-secondary">Cancel</a>
+    </div>
+</form>
+
+@section Scripts {
+    @{ await Html.RenderPartialAsync("_ValidationScriptsPartial"); }
+    <script>
+        var products = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.AvailableProducts.Select(p => new { value = p.Value, text = p.Text })));
+        var rowIndex = @Model.Items.Count;
+
+        function loadBatches(productSelect, batchSelect) {
+            var productId = productSelect.value;
+            batchSelect.innerHTML = '<option value="">Loading...</option>';
+            if (!productId) { batchSelect.innerHTML = '<option value="">— Select Product first —</option>'; return; }
+            fetch('/StockTransfers/GetBatchesForProduct?productId=' + productId)
+                .then(r => r.json())
+                .then(data => {
+                    batchSelect.innerHTML = '<option value="">— Select Batch —</option>';
+                    data.forEach(b => {
+                        var opt = document.createElement('option');
+                        opt.value = b.value; opt.textContent = b.text;
+                        batchSelect.appendChild(opt);
+                    });
+                }).catch(() => { batchSelect.innerHTML = '<option value="">Error</option>'; });
+        }
+
+        document.getElementById('addRowBtn').addEventListener('click', function () {
+            var html = '<div class="row g-2 align-items-end mb-2 item-row">' +
+                '<div class="col-md-5"><label class="form-label small fw-semibold">Product</label>' +
+                '<select name="Items[' + rowIndex + '].ProductId" class="form-select product-select" data-index="' + rowIndex + '"><option value="">— Select Product —</option>' +
+                products.map(p => '<option value="' + p.value + '">' + p.text + '</option>').join('') + '</select></div>' +
+                '<div class="col-md-4"><label class="form-label small fw-semibold">Batch</label>' +
+                '<select name="Items[' + rowIndex + '].BatchId" class="form-select batch-select" data-index="' + rowIndex + '"><option value="">— Select Product first —</option></select></div>' +
+                '<div class="col-md-2"><label class="form-label small fw-semibold">Qty</label>' +
+                '<input name="Items[' + rowIndex + '].Quantity" type="number" step="0.001" min="0.001" class="form-control" placeholder="0" /></div>' +
+                '<div class="col-md-1"><button type="button" class="btn btn-outline-danger btn-sm remove-row-btn w-100"><i class="bi bi-trash"></i></button></div></div>';
+            document.getElementById('itemsContainer').insertAdjacentHTML('beforeend', html);
+            rowIndex++;
+            attachListeners();
+        });
+
+        function attachListeners() {
+            document.querySelectorAll('.product-select').forEach(function (sel) {
+                if (!sel.dataset.listenerAttached) {
+                    sel.addEventListener('change', function () {
+                        var row = this.closest('.item-row');
+                        var batchSel = row.querySelector('.batch-select');
+                        loadBatches(this, batchSel);
+                    });
+                    sel.dataset.listenerAttached = 'true';
+                }
+            });
+            document.querySelectorAll('.remove-row-btn').forEach(function (btn) {
+                if (!btn.dataset.listenerAttached) {
+                    btn.addEventListener('click', function () {
+                        this.closest('.item-row').remove();
+                    });
+                    btn.dataset.listenerAttached = 'true';
+                }
+            });
+        }
+        attachListeners();
+    </script>
+}
+

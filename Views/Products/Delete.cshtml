@@ -1,0 +1,73 @@
+@model SuperMarket.Models.ViewModels.ProductDetailsViewModel
+
+@{
+    ViewData["Title"] = "Delete Product - " + Model.Product.ProductName;
+}
+
+<div class="container my-4" style="max-width: 650px;">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-action="Index">Products</a></li>
+            <li class="breadcrumb-item"><a asp-action="Details" asp-route-id="@Model.Product.ProductId">@Model.Product.ProductName</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Delete Confirmation</li>
+        </ol>
+    </nav>
+
+    <div class="card shadow-sm border-danger">
+        <div class="card-header bg-danger text-white py-3 d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i> Delete Product Confirmation
+            </h5>
+            <a asp-action="Index" class="btn btn-sm btn-light">
+                <i class="bi bi-x-lg"></i>
+            </a>
+        </div>
+        <div class="card-body p-4">
+            <p class="text-danger fw-semibold fs-6">
+                Are you sure you want to delete this product?
+            </p>
+
+            <div class="p-3 bg-light rounded border mb-4">
+                <div class="row g-2 small">
+                    <div class="col-sm-4 text-muted">Product Name:</div>
+                    <div class="col-sm-8 fw-bold text-dark fs-6">@Model.Product.ProductName</div>
+
+                    <div class="col-sm-4 text-muted">SKU:</div>
+                    <div class="col-sm-8 font-monospace">@Model.Product.Sku</div>
+
+                    <div class="col-sm-4 text-muted">Barcode:</div>
+                    <div class="col-sm-8 font-monospace">@Model.Product.Barcode</div>
+
+                    <div class="col-sm-4 text-muted">Category:</div>
+                    <div class="col-sm-8">@Model.CategoryName</div>
+
+                    <div class="col-sm-4 text-muted">Selling Price:</div>
+                    <div class="col-sm-8 fw-bold">$@Model.Product.SellingPrice.ToString("F2")</div>
+
+                    <div class="col-sm-4 text-muted">Current Stock:</div>
+                    <div class="col-sm-8">
+                        <span class="badge @(Model.TotalStock <= 0 ? "bg-danger" : "bg-warning text-dark")">
+                            @Model.TotalStock @Model.Product.UnitOfMeasure
+                        </span>
+                    </div>
+
+                    <div class="col-sm-4 text-muted">Registered Batches:</div>
+                    <div class="col-sm-8">@Model.Batches.Count Batch(es)</div>
+                </div>
+            </div>
+
+            <form asp-action="Delete" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" value="@Model.Product.ProductId" />
+                <div class="d-flex justify-content-end gap-2">
+                    <a asp-action="Index" class="btn btn-outline-secondary px-4">Cancel</a>
+                    <button type="submit" class="btn btn-danger px-4">
+                        <i class="bi bi-trash-fill me-1"></i> Delete Product
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
