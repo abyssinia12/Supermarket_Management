@@ -447,7 +447,7 @@ namespace SuperMarket.Services
                     var stocks = await query.ToListAsync();
                     foreach (var s in stocks)
                     {
-                        //var status = ComputeStockStatus(s.Quantity, s.Product.MinStockLevel, s.Product.ReorderPoint);
+                        var status = ComputeStockStatus(s.Quantity, s.Product.MinStockLevel, s.Product.ReorderPoint);
                         bool expiring = s.Batch.ExpirationDate.HasValue && s.Batch.ExpirationDate.Value > today && s.Batch.ExpirationDate.Value <= today.AddDays(30);
                         bool expired = s.Batch.ExpirationDate.HasValue && s.Batch.ExpirationDate.Value <= today;
                         result.Add(new LocationStockViewModel
@@ -464,8 +464,9 @@ namespace SuperMarket.Services
                             BatchNumber = s.Batch.BatchNumber,
                             ExpirationDate = s.Batch.ExpirationDate,
                             Quantity = s.Quantity,
-                            //MinStockLevel=s.Product.MinStockLevel, ReorderPoint=s.Product.ReorderPoint,
-                            //MaxStockLevel=s.Product.MaxStockLevel, StockStatus=status,
+                            MinStockLevel=s.Product.MinStockLevel, ReorderPoint=s.Product.ReorderPoint,
+                            MaxStockLevel=s.Product.MaxStockLevel,
+                            StockStatus =status,
                             UnitCost = s.Batch.UnitCost,
                             InventoryValue = s.Quantity * s.Batch.UnitCost,
                             IsExpiringSoon = expiring,
@@ -495,7 +496,7 @@ namespace SuperMarket.Services
                 var batch = batches.FirstOrDefault(b => b.BatchId == s.BatchId);
                 var loc = locs.FirstOrDefault(l => l.LocationId == s.LocationId);
                 if (prod == null || batch == null || loc == null) continue;
-                //var status = ComputeStockStatus(s.Quantity, prod.MinStockLevel, prod.ReorderPoint);
+                var status = ComputeStockStatus(s.Quantity, prod.MinStockLevel, prod.ReorderPoint);
                 bool expiring = batch.ExpirationDate.HasValue && batch.ExpirationDate.Value > today && batch.ExpirationDate.Value <= today.AddDays(30);
                 bool expired = batch.ExpirationDate.HasValue && batch.ExpirationDate.Value <= today;
                 result.Add(new LocationStockViewModel
@@ -1497,11 +1498,11 @@ namespace SuperMarket.Services
                 }
                 catch { }
             }
-            return (await GetProductsFromStoreAsync()).Where(p => p.IsActive).OrderBy(p => p.ProductName).ToList();
+            return (await GetProductsFromStoreAsync()).Where(p => p.IsActive).Select(p => new ProductListViewModel { ProductId = p.ProductId, ProductName = p.ProductName, Sku = p.Sku }).OrderBy(p => p.ProductName).ToList();
         }
 
-        Reads products from ProductService's JSON store
-        private async Task<List<ProductListViewModel>> GetProductsFromStoreAsync()
+        // Reads products from ProductService's JSON store
+        private async Task<List<ProdStoreItem>> GetProductsFromStoreAsync()
         {
             try
             {
@@ -1510,7 +1511,7 @@ namespace SuperMarket.Services
                 var json = await File.ReadAllTextAsync(path);
                 using var doc = JsonDocument.Parse(json);
                 if (!doc.RootElement.TryGetProperty("Products", out var prods)) return GetFallbackProducts();
-                var result = new List<ProductListViewModel>();
+                var result = new List<ProdStoreItem>();
                 foreach (var p in prods.EnumerateArray())
                 {
                     bool isDeleted = p.TryGetProperty("IsDeleted", out var d) && d.GetBoolean();
@@ -1525,7 +1526,7 @@ namespace SuperMarket.Services
                     int minStock = p.TryGetProperty("MinStockLevel", out var ms) ? ms.GetInt32() : 0;
                     int reorder = p.TryGetProperty("ReorderPoint", out var rp) ? rp.GetInt32() : 0;
                     int maxStock = p.TryGetProperty("MaxStockLevel", out var mx) ? mx.GetInt32() : 0;
-                    result.Add(new ProductListViewModel
+                    result.Add(new ProdStoreItem
                     {
                         ProductId = prodId,
                         ProductName = name,
@@ -1534,7 +1535,9 @@ namespace SuperMarket.Services
                         PurchaseCost = cost,
                         SellingPrice = price,
                         MinStockLevel = minStock,
-                        //ReorderPoint=reorder, MaxStockLevel=maxStock, IsActive=isActive
+                        ReorderPoint = reorder,
+                        MaxStockLevel = maxStock,
+                        IsActive = isActive
                     });
                 }
                 return result;
@@ -1542,7 +1545,7 @@ namespace SuperMarket.Services
             catch { return GetFallbackProducts(); }
         }
 
-        private List<ProductListViewModel> GetFallbackProducts() => new()
+        private List<ProdStoreItem> GetFallbackProducts() => new()
         {
             new() { ProductId=1, ProductName="Coca-Cola 330ml", Sku="SKU-001", IsActive=true, PurchaseCost=0.80m, SellingPrice=1.20m, MinStockLevel=50, ReorderPoint=100, MaxStockLevel=500 },
             new() { ProductId=2, ProductName="Pepsi 330ml", Sku="SKU-002", IsActive=true, PurchaseCost=0.75m, SellingPrice=1.15m, MinStockLevel=50, ReorderPoint=100, MaxStockLevel=500 },

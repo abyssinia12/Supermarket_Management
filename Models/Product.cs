@@ -48,6 +48,12 @@ public partial class Product
 
     public int MinStockLevel { get; set; }
 
+    [NotMapped]
+    public int ReorderPoint => MinStockLevel * 2;
+
+    [NotMapped]
+    public int MaxStockLevel => MinStockLevel * 10;
+
     public bool? IsActive { get; set; }
 
     public DateTime? CreatedAt { get; set; }

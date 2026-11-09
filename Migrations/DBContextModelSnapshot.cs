@@ -348,6 +348,9 @@ namespace SuperMarket.Migrations
                         .HasColumnType("int")
                         .HasColumnName("LocationID");
 
+                    b.Property<decimal>("MaxStockLevel")
+                        .HasColumnType("decimal(18, 3)");
+
                     b.Property<decimal>("MinStockLevel")
                         .HasColumnType("decimal(18, 3)");
 
