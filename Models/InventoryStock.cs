@@ -31,7 +31,7 @@ public partial class InventoryStock
     public decimal MinStockLevel { get; set; }
 
     [Column(TypeName = "decimal(18, 3)")]
-    public decimal MaxStockLevel { get; set; }  
+    public decimal MaxStockLevel { get; set; }
 
     [Column(TypeName = "decimal(18, 3)")]
     public decimal ReorderPoint { get; set; }

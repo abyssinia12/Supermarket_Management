@@ -107,7 +107,7 @@ namespace SuperMarket.Controllers
         private async Task PopulateDropdownsAsync(StockAdjustmentFormViewModel model)
         {
             var products = await _inventoryService.GetActiveProductsForDropdownAsync();
-            var locations = await _inventoryService.GetLocationsAsync();
+            var locations = await _inventoryService.GetStockLocationsAsync();
             model.AvailableProducts = products.Select(p => new SelectListItem(p.ProductName, p.ProductId.ToString())).ToList();
             model.AvailableLocations = locations.Select(l => new SelectListItem(l.LocationName, l.LocationId.ToString())).ToList();
             if (model.ProductId > 0)

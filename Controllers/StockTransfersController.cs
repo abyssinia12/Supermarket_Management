@@ -127,7 +127,7 @@ namespace SuperMarket.Controllers
 
         private async Task PopulateDropdownsAsync(StockTransferFormViewModel model)
         {
-            var locations = await _inventoryService.GetLocationsAsync();
+            var locations = await _inventoryService.GetStockLocationsAsync();
             var products = await _inventoryService.GetActiveProductsForDropdownAsync();
             model.AvailableLocations = locations.Select(l => new SelectListItem(l.LocationName, l.LocationId.ToString())).ToList();
             model.AvailableProducts = products.Select(p => new SelectListItem($"{p.ProductName} ({p.Sku})", p.ProductId.ToString())).ToList();

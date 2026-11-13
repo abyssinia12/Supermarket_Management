@@ -22,9 +22,15 @@ namespace SuperMarket.Controllers
         }
 
         // GET /Inventory
+        //public async Task<IActionResult> Index()
+        //{
+        //    await _inventoryService.EnsureDefaultLocationsAsync();
+        //    var dashboard = await _inventoryService.GetStockDashboardAsync();
+        //    return View(dashboard);
+        //}
+        // GET /Inventory
         public async Task<IActionResult> Index()
         {
-            await _inventoryService.EnsureDefaultLocationsAsync();
             var dashboard = await _inventoryService.GetStockDashboardAsync();
             return View(dashboard);
         }
@@ -33,7 +39,7 @@ namespace SuperMarket.Controllers
         public async Task<IActionResult> StockByLocation(int? locationId, int? productId, string? stockStatus)
         {
             var stock = await _inventoryService.GetStockByLocationAsync(locationId, productId, stockStatus);
-            var locations = await _inventoryService.GetLocationsAsync();
+            var locations = await _inventoryService.GetStockLocationsAsync();
             var products = await _inventoryService.GetActiveProductsForDropdownAsync();
             ViewBag.Locations = new SelectList(locations, "LocationId", "LocationName", locationId);
             ViewBag.Products = new SelectList(products, "ProductId", "ProductName", productId);

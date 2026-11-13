@@ -8,6 +8,7 @@ namespace SuperMarket.Services
 {
     public interface IInventoryService
     {
+        //Task<List<LocationStockViewModel>> GetStockByLocationAsync(int? locationId = null, int? productId = null, string? stockStatus = null, bool includeEmptyProducts = false);
         // Locations
         Task<List<Location>> GetLocationsAsync();
         Task<Location?> GetLocationByIdAsync(int id);
@@ -17,7 +18,8 @@ namespace SuperMarket.Services
 
         // Stock overview
         Task<StockDashboardViewModel> GetStockDashboardAsync();
-        Task<List<LocationStockViewModel>> GetStockByLocationAsync(int? locationId = null, int? productId = null, string? stockStatus = null);
+        Task<List<LocationStockViewModel>> GetStockByLocationAsync(int? locationId = null, int? productId = null, string? stockStatus = null, bool includeEmptyProducts = false);
+        //Task<List<LocationStockViewModel>> GetStockByLocationAsync(int? locationId = null, int? productId = null, string? stockStatus = null);
         Task<List<LocationSummaryViewModel>> GetLocationSummariesAsync();
         Task<decimal> GetTotalInventoryValueAsync();
 
@@ -53,7 +55,11 @@ namespace SuperMarket.Services
         // Helpers
         Task<List<ProductBatch>> GetBatchesForProductAsync(int productId);
         Task<List<ProductListViewModel>> GetActiveProductsForDropdownAsync();
-        Task EnsureDefaultLocationsAsync();
+
+        Task<List<Location>> GetStockLocationsAsync();
+        //Task<List<ProductBatch>> GetBatchesForProductAsync(int productId);
+        //Task<List<ProductListViewModel>> GetActiveProductsForDropdownAsync();
+        //Task EnsureDefaultLocationsAsync();
     }
 }
 
